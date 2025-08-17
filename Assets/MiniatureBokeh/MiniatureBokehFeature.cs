@@ -8,18 +8,21 @@ namespace MiniatureBokeh {
 
 sealed class MiniatureBokehPass : ScriptableRenderPass
 {
-    // Custom data for the blit pass
     class PassData
     {
         public TextureHandle source;
         public Material material;
         public MaterialPropertyBlock props;
+        public int passIndex;
     }
 
     Material _material;
 
     public MiniatureBokehPass(Material material)
-      => _material = material;
+    {
+        _material = material;
+        requiresIntermediateTexture = true;
+    }
 
     public override void RecordRenderGraph
       (RenderGraph graph, ContextContainer context)
@@ -27,26 +30,44 @@ sealed class MiniatureBokehPass : ScriptableRenderPass
         var camera = context.Get<UniversalCameraData>().camera;
         var resource = context.Get<UniversalResourceData>();
 
-        // MiniatureBokehController component reference
         var ctrl = camera.GetComponent<MiniatureBokehController>();
         if (ctrl == null || !ctrl.enabled || !ctrl.IsReady) return;
 
-        // Destination texture allocation
         var source = resource.activeColorTexture;
         var desc = graph.GetTextureDesc(source);
-        desc.name = "MiniatureBokeh";
+        desc.name = "MiniatureBokeh_Temp";
         desc.clearBuffer = false;
         desc.depthBufferBits = 0;
-        var dest = graph.CreateTexture(desc);
+        var temp = graph.CreateTexture(desc);
 
-        // Composite pass setup: source + canvas -> dest
         using (var builder = graph.AddRasterRenderPass<PassData>
-          ("MiniatureBokeh Blit", out var passData))
+          ("MiniatureBokeh Horizontal", out var passData))
         {
             passData.source = resource.activeColorTexture;
             passData.material = _material;
             passData.props = ctrl.MaterialProperties;
+            passData.passIndex = 0;
 
+            builder.AllowPassCulling(false);
+            builder.UseTexture(passData.source);
+            builder.SetRenderAttachment(temp, 0);
+
+            builder.SetRenderFunc
+              ((PassData data, RasterGraphContext ctx) => ExecutePass(data, ctx));
+        }
+
+        desc.name = "MiniatureBokeh_Final";
+        var dest = graph.CreateTexture(desc);
+
+        using (var builder = graph.AddRasterRenderPass<PassData>
+          ("MiniatureBokeh Diagonal", out var passData))
+        {
+            passData.source = temp;
+            passData.material = _material;
+            passData.props = ctrl.MaterialProperties;
+            passData.passIndex = 1;
+
+            builder.AllowPassCulling(false);
             builder.UseTexture(passData.source);
             builder.SetRenderAttachment(dest, 0);
 
@@ -54,15 +75,17 @@ sealed class MiniatureBokehPass : ScriptableRenderPass
               ((PassData data, RasterGraphContext ctx) => ExecutePass(data, ctx));
         }
 
-        // Use the destination texture as the new camera color.
         resource.cameraColor = dest;
     }
 
-    // Render pass execution
     static void ExecutePass(PassData data, RasterGraphContext context)
     {
-        data.material.SetTexture("_MainTex", data.source);
-        CoreUtils.DrawFullScreen(context.cmd, data.material, data.props);
+        if (data.passIndex == 0)
+            data.material.SetTexture("_SourceTex", data.source);
+        else
+            data.material.SetTexture("_HorizontalTex", data.source);
+        
+        CoreUtils.DrawFullScreen(context.cmd, data.material, data.props, data.passIndex);
     }
 }
 
