@@ -1,19 +1,52 @@
 using UnityEngine;
 
-[ExecuteInEditMode]
+[ExecuteInEditMode, RequireComponent(typeof(Camera))]
 public sealed partial class MiniatureBokehController : MonoBehaviour
 {
-    [SerializeField] Transform _referencePlane = null;
-    [SerializeField] bool _autoFocus = true;
-    [SerializeField, Range(0.1f, 100f)] float _focusDistance = 10f;
-    [SerializeField, Range(0f, 5f)] float _bokehIntensity = 1f;
-    [SerializeField, Range(1f, 50f)] float _maxBlurRadius = 10f;
+    #region Public properties
+
+    [field: SerializeField]
+    public Transform ReferencePlane { get; set; } = null;
+
+    [field: SerializeField]
+    public bool AutoFocus { get; set; } = true;
+
+    [field: SerializeField, Range(0.1f, 100f)]
+    public float FocusDistance { get; set; } = 10f;
+
+    [field: SerializeField, Range(0f, 5f)]
+    public float BokehIntensity { get; set; } = 1f;
+
+    [field: SerializeField, Range(0.1f, 5f)]
+    public float MaxBlurRadius { get; set; } = 1f;
+
+    #endregion
 
     #region Public members exposed for render passes
 
-    public bool IsReady => MaterialProperties != null && _referencePlane != null;
+    public bool IsReady
+      => MaterialProperties != null && ReferencePlane != null;
 
     public MaterialPropertyBlock MaterialProperties { get; private set; }
+
+    #endregion
+
+    #region Private properties
+
+    float GetEffectiveFocusDistance()
+    {
+        if (!AutoFocus) return FocusDistance;
+
+        var camera = GetComponent<Camera>();
+        var cameraTransform = camera.transform;
+        var planeNormal = ReferencePlane.up;
+        var planePoint = ReferencePlane.position;
+        
+        var ray = new Ray(cameraTransform.position, cameraTransform.forward);
+        var plane = new Plane(planeNormal, planePoint);
+        
+        return plane.Raycast(ray, out float distance) ? distance : FocusDistance;
+    }
 
     #endregion
 
@@ -21,36 +54,21 @@ public sealed partial class MiniatureBokehController : MonoBehaviour
 
     void LateUpdate()
     {
+        if (ReferencePlane == null) return;
+
         if (MaterialProperties == null)
             MaterialProperties = new MaterialPropertyBlock();
 
-        if (_referencePlane == null) return;
-
-        var camera = GetComponent<Camera>();
-        if (camera == null) return;
-
-        var cameraTransform = camera.transform;
-        var planeNormal = _referencePlane.up;
-        var planePoint = _referencePlane.position;
+        var planeNormal = ReferencePlane.up;
+        var planePoint = ReferencePlane.position;
         
-        float focusDistance = _focusDistance;
-        
-        if (_autoFocus)
-        {
-            var ray = new Ray(cameraTransform.position, cameraTransform.forward);
-            var plane = new Plane(planeNormal, planePoint);
-            if (plane.Raycast(ray, out float distance))
-                focusDistance = distance;
-        }
-
         var planeEquation = new Vector4(planeNormal.x, planeNormal.y, planeNormal.z, 
                                        -Vector3.Dot(planeNormal, planePoint));
         
         MaterialProperties.SetVector("_PlaneEquation", planeEquation);
-        MaterialProperties.SetFloat("_FocusDistance", focusDistance);
-        MaterialProperties.SetFloat("_BokehIntensity", _bokehIntensity);
-        MaterialProperties.SetFloat("_MaxBlurRadius", _maxBlurRadius);
-        MaterialProperties.SetVector("_BokehScreenParams", new Vector4(Screen.width, Screen.height, 1f / Screen.width, 1f / Screen.height));
+        MaterialProperties.SetFloat("_FocusDistance", GetEffectiveFocusDistance());
+        MaterialProperties.SetFloat("_BokehIntensity", BokehIntensity);
+        MaterialProperties.SetFloat("_MaxBlurRadius", MaxBlurRadius);
     }
 
     #endregion

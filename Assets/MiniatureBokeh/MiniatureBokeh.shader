@@ -16,7 +16,6 @@ float4 _PlaneEquation;
 float _FocusDistance;
 float _BokehIntensity;
 float _MaxBlurRadius;
-float4 _BokehScreenParams;
 
 float GetDepthFromPlane(float2 screenPos)
 {
@@ -37,7 +36,8 @@ float CalculateCoC(float depth)
 {
     float coc = abs(depth - _FocusDistance) / _FocusDistance;
     coc = saturate(coc * _BokehIntensity);
-    return coc * _MaxBlurRadius;
+    float maxBlurRadiusPixels = _MaxBlurRadius * 0.01 * _ScaledScreenParams.y;
+    return coc * maxBlurRadiusPixels;
 }
 
 void Vert(uint vertexID : SV_VertexID,
@@ -68,7 +68,7 @@ float3 HexagonalBokehHorizontal(float2 uv)
         if (abs(i) > sampleCount) continue;
         
         float offset = i * step;
-        float2 sampleUV = uv + float2(offset * _BokehScreenParams.z, 0);
+        float2 sampleUV = uv + float2(offset * (_ScaledScreenParams.z - 1.0), 0);
         
         float weight = 1.0 - abs(i) / (float)(sampleCount + 1);
         weight *= weight;
@@ -108,8 +108,8 @@ float3 HexagonalBokehDiagonal(float2 uv)
         float weight = 1.0 - abs(i) / (float)(sampleCount + 1);
         weight *= weight;
         
-        float2 sampleUV1 = uv + dir1 * offset * _BokehScreenParams.zw;
-        float2 sampleUV2 = uv + dir2 * offset * _BokehScreenParams.zw;
+        float2 sampleUV1 = uv + dir1 * offset * (_ScaledScreenParams.zw - 1.0);
+        float2 sampleUV2 = uv + dir2 * offset * (_ScaledScreenParams.zw - 1.0);
         
         color += SAMPLE_TEXTURE2D_LOD(_HorizontalTex, sampler_HorizontalTex, sampleUV1, 0).rgb * weight * 0.5;
         color += SAMPLE_TEXTURE2D_LOD(_HorizontalTex, sampler_HorizontalTex, sampleUV2, 0).rgb * weight * 0.5;

@@ -620,11 +620,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e33837e88136f4aedab2a816faefebff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _referencePlane: {fileID: 517540853}
-  _autoFocus: 1
-  _focusDistance: 100
-  _bokehIntensity: 5
-  _maxBlurRadius: 50
+  <ReferencePlane>k__BackingField: {fileID: 517540853}
+  <AutoFocus>k__BackingField: 1
+  <FocusDistance>k__BackingField: 15
+  <BokehIntensity>k__BackingField: 5
+  <MaxBlurRadius>k__BackingField: 5
 --- !u!1 &1602446955
 GameObject:
   m_ObjectHideFlags: 0
