@@ -6,11 +6,11 @@ HLSLINCLUDE
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
 
-TEXTURE2D(_SourceTex);
-SAMPLER(sampler_SourceTex);
+TEXTURE2D(_PrimaryTex);
+SAMPLER(sampler_PrimaryTex);
 
-TEXTURE2D(_HorizontalTex);
-SAMPLER(sampler_HorizontalTex);
+TEXTURE2D(_SecondaryTex);
+SAMPLER(sampler_SecondaryTex);
 
 float4 _PlaneEquation;
 float _FocusDistance;
@@ -53,7 +53,7 @@ float3 HexagonalBokehHorizontal(float2 uv)
     float depth = GetDepthFromPlane(uv);
     float coc = CalculateCoC(depth);
 
-    if (coc < 0.5) return SAMPLE_TEXTURE2D_LOD(_SourceTex, sampler_SourceTex, uv, 0).rgb;
+    if (coc < 0.5) return SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, uv, 0).rgb;
 
     float3 color = 0;
     float totalWeight = 0;
@@ -73,11 +73,11 @@ float3 HexagonalBokehHorizontal(float2 uv)
         float weight = 1.0 - abs(i) / (float)(sampleCount + 1);
         weight *= weight;
 
-        color += SAMPLE_TEXTURE2D_LOD(_SourceTex, sampler_SourceTex, sampleUV, 0).rgb * weight;
+        color += SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, sampleUV, 0).rgb * weight;
         totalWeight += weight;
     }
 
-    return totalWeight > 0 ? color / totalWeight : SAMPLE_TEXTURE2D_LOD(_SourceTex, sampler_SourceTex, uv, 0).rgb;
+    return totalWeight > 0 ? color / totalWeight : SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, uv, 0).rgb;
 }
 
 float3 HexagonalBokehDiagonal(float2 uv)
@@ -85,7 +85,7 @@ float3 HexagonalBokehDiagonal(float2 uv)
     float depth = GetDepthFromPlane(uv);
     float coc = CalculateCoC(depth);
 
-    if (coc < 0.5) return SAMPLE_TEXTURE2D_LOD(_HorizontalTex, sampler_HorizontalTex, uv, 0).rgb;
+    if (coc < 0.5) return SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, uv, 0).rgb;
 
     float3 color = 0;
     float totalWeight = 0;
@@ -111,12 +111,12 @@ float3 HexagonalBokehDiagonal(float2 uv)
         float2 sampleUV1 = uv + dir1 * offset * (_ScaledScreenParams.zw - 1.0);
         float2 sampleUV2 = uv + dir2 * offset * (_ScaledScreenParams.zw - 1.0);
 
-        color += SAMPLE_TEXTURE2D_LOD(_HorizontalTex, sampler_HorizontalTex, sampleUV1, 0).rgb * weight * 0.5;
-        color += SAMPLE_TEXTURE2D_LOD(_HorizontalTex, sampler_HorizontalTex, sampleUV2, 0).rgb * weight * 0.5;
+        color += SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, sampleUV1, 0).rgb * weight * 0.5;
+        color += SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, sampleUV2, 0).rgb * weight * 0.5;
         totalWeight += weight;
     }
 
-    return totalWeight > 0 ? color / totalWeight : SAMPLE_TEXTURE2D_LOD(_HorizontalTex, sampler_HorizontalTex, uv, 0).rgb;
+    return totalWeight > 0 ? color / totalWeight : SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, uv, 0).rgb;
 }
 
 float4 FragHorizontal(float4 position : SV_Position,
