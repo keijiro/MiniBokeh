@@ -1,3 +1,7 @@
+// Mini Bokeh - Separable hexagonal bokeh depth of field effect
+// Based on "Separable Bokeh" by DiPaola, McIntosh, and Riecke (2012)
+// Paper: https://doi.org/10.1145/2343483.2343490
+
 Shader "Hidden/MiniBokeh"
 {
 HLSLINCLUDE
@@ -8,12 +12,40 @@ HLSLINCLUDE
 
 TEXTURE2D(_PrimaryTex);
 TEXTURE2D(_SecondaryTex);
-
 float4 _PlaneEquation;
 float _FocusDistance;
 float _BokehIntensity;
 float _MaxBlurRadius;
 
+// Screen coordinate helpers
+#define RCP_WIDTH (_ScaledScreenParams.z - 1.0)
+#define RCP_HEIGHT (_ScaledScreenParams.w - 1.0)
+#define RCP_WIDTH_HEIGHT (_ScaledScreenParams.zw - 1.0)
+
+// Texture samplers
+float3 SamplePrimary(float2 uv)
+{
+    return SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_LinearClamp, uv, 0).rgb;
+}
+
+float3 SampleSecondary(float2 uv)
+{
+    return SAMPLE_TEXTURE2D_LOD(_SecondaryTex, sampler_LinearClamp, uv, 0).rgb;
+}
+
+float3 SamplePrimaryBounded(float2 uv)
+{
+    bool inBounds = all(uv >= 0.0) && all(uv <= 1.0);
+    return inBounds ? SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_LinearClamp, uv, 0).rgb : 0;
+}
+
+float3 SampleSecondaryBounded(float2 uv)
+{
+    bool inBounds = all(uv >= 0.0) && all(uv <= 1.0);
+    return inBounds ? SAMPLE_TEXTURE2D_LOD(_SecondaryTex, sampler_LinearClamp, uv, 0).rgb : 0;
+}
+
+// Depth and CoC (Circle of Confusion) calculation
 float GetDepthFromPlane(float2 screenPos)
 {
     float4 worldPos = mul(UNITY_MATRIX_I_VP, float4(screenPos * 2 - 1, 0, 1));
@@ -37,41 +69,10 @@ float CalculateCoC(float depth)
     return coc * maxBlurRadiusPixels;
 }
 
-float3 SamplePrimary(float2 uv)
-{
-    return SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_LinearClamp, uv, 0).rgb;
-}
-
-float3 SampleSecondary(float2 uv)
-{
-    return SAMPLE_TEXTURE2D_LOD(_SecondaryTex, sampler_LinearClamp, uv, 0).rgb;
-}
-
-float3 SamplePrimaryBounded(float2 uv)
-{
-    bool inBounds = all(uv >= 0.0) && all(uv <= 1.0);
-    return inBounds ? SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_LinearClamp, uv, 0).rgb : 0;
-}
-
-float3 SampleSecondaryBounded(float2 uv)
-{
-    bool inBounds = all(uv >= 0.0) && all(uv <= 1.0);
-    return inBounds ? SAMPLE_TEXTURE2D_LOD(_SecondaryTex, sampler_LinearClamp, uv, 0).rgb : 0;
-}
-
-void Vert(uint vertexID : SV_VertexID,
-          out float4 outPosition : SV_Position,
-          out float2 outTexCoord : TEXCOORD0)
-{
-    outPosition = GetFullScreenTriangleVertexPosition(vertexID);
-    outTexCoord = GetFullScreenTriangleTexCoord(vertexID);
-}
-
+// Separable blur filters for hexagonal bokeh
 float3 HexagonalBokehHorizontal(float2 uv)
 {
-    float depth = GetDepthFromPlane(uv);
-    float coc = CalculateCoC(depth);
-
+    float coc = CalculateCoC(GetDepthFromPlane(uv));
     if (coc < 0.5) return SamplePrimary(uv);
 
     float3 color = 0;
@@ -86,7 +87,7 @@ float3 HexagonalBokehHorizontal(float2 uv)
         if (abs(i) > sampleCount) continue;
 
         float offset = i * step;
-        float2 sampleUV = uv + float2(offset * (_ScaledScreenParams.z - 1.0), 0);
+        float2 sampleUV = uv + float2(offset * RCP_WIDTH, 0);
 
         color += SamplePrimaryBounded(sampleUV);
     }
@@ -97,9 +98,7 @@ float3 HexagonalBokehHorizontal(float2 uv)
 
 float3 HexagonalBokehDiagonal(float2 uv)
 {
-    float depth = GetDepthFromPlane(uv);
-    float coc = CalculateCoC(depth);
-
+    float coc = CalculateCoC(GetDepthFromPlane(uv));
     if (coc < 0.5) return SamplePrimary(uv);
 
     float3 color1 = 0, color2 = 0;
@@ -108,7 +107,7 @@ float3 HexagonalBokehDiagonal(float2 uv)
     int sampleCount = clamp((int)(coc * 2), 1, maxSamples);
     float step = coc / sampleCount;
 
-    float2 dir1 = float2(0.5, 0.866025);     // 60 degrees
+    float2 dir1 = float2(0.5,  0.866025);    // +60 degrees
     float2 dir2 = float2(0.5, -0.866025);    // -60 degrees
 
     [unroll(33)]
@@ -118,10 +117,9 @@ float3 HexagonalBokehDiagonal(float2 uv)
 
         float offset = i * step;
 
-        float2 sampleUV1 = uv + dir1 * offset * (_ScaledScreenParams.zw - 1.0);
-        float2 sampleUV2 = uv + dir2 * offset * (_ScaledScreenParams.zw - 1.0);
+        float2 sampleUV1 = uv + dir1 * offset * RCP_WIDTH_HEIGHT;
+        float2 sampleUV2 = uv + dir2 * offset * RCP_WIDTH_HEIGHT;
 
-        // Accumulate separately for each direction
         color1 += SamplePrimaryBounded(sampleUV1);
         color2 += SamplePrimaryBounded(sampleUV2);
     }
@@ -133,41 +131,47 @@ float3 HexagonalBokehDiagonal(float2 uv)
     return min(result1, result2);
 }
 
+// Vertex/fragment shaders
+void Vert(uint vertexID : SV_VertexID,
+          out float4 outPosition : SV_Position,
+          out float2 outTexCoord : TEXCOORD0)
+{
+    outPosition = GetFullScreenTriangleVertexPosition(vertexID);
+    outTexCoord = GetFullScreenTriangleTexCoord(vertexID);
+}
+
 float4 FragHorizontal(float4 position : SV_Position,
-                     float2 texCoord : TEXCOORD0) : SV_Target
+                      float2 texCoord : TEXCOORD0) : SV_Target
 {
     float3 color = HexagonalBokehHorizontal(texCoord);
     return float4(color, 1);
 }
 
 float4 FragDiagonal(float4 position : SV_Position,
-                   float2 texCoord : TEXCOORD0) : SV_Target
+                    float2 texCoord : TEXCOORD0) : SV_Target
 {
     float3 color = HexagonalBokehDiagonal(texCoord);
     return float4(color, 1);
 }
 
-// Simple downsample pass - bilinear filtering will be applied automatically
 float4 FragDownsample(float4 position : SV_Position,
-                     float2 texCoord : TEXCOORD0) : SV_Target
+                      float2 texCoord : TEXCOORD0) : SV_Target
 {
     float3 color = SamplePrimary(texCoord);
     return float4(color, 1);
 }
 
-// Upsample and composite - PrimaryTex is the blurred half-res, SecondaryTex is the original full-res
 float4 FragUpsampleComposite(float4 position : SV_Position,
-                            float2 texCoord : TEXCOORD0) : SV_Target
+                             float2 texCoord : TEXCOORD0) : SV_Target
 {
-    // Blurred image from half resolution
+    // Primary: blurred half-resolution image
     float3 blurredColor = SamplePrimary(texCoord);
 
-    // Original full resolution image
+    // Secondary: original full-resolution image
     float3 originalColor = SampleSecondary(texCoord);
 
     // Calculate CoC for blending
-    float depth = GetDepthFromPlane(texCoord);
-    float coc = CalculateCoC(depth);
+    float coc = CalculateCoC(GetDepthFromPlane(texCoord));
 
     // Smooth blend based on CoC
     float blendFactor = smoothstep(0.0, 2.0, coc);
