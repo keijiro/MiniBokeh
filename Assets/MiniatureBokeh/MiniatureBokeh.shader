@@ -70,13 +70,9 @@ float3 HexagonalBokehHorizontal(float2 uv)
         float offset = i * step;
         float2 sampleUV = uv + float2(offset * (_ScaledScreenParams.z - 1.0), 0);
 
-        float weight = 1.0 - abs(i) / (float)(sampleCount + 1);
-        weight *= weight;
-
-        // Check bounds for horizontal sample
         bool inBounds = sampleUV.x >= 0.0 && sampleUV.x <= 1.0 && sampleUV.y >= 0.0 && sampleUV.y <= 1.0;
-        if (inBounds) color += SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, sampleUV, 0).rgb * weight;
-        totalWeight += weight;
+        if (inBounds) color += SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, sampleUV, 0).rgb;
+        totalWeight++;
     }
 
     return totalWeight > 0 ? color / totalWeight : SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, uv, 0).rgb;
@@ -89,16 +85,16 @@ float3 HexagonalBokehDiagonal(float2 uv)
 
     if (coc < 0.5) return SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, uv, 0).rgb;
 
-    float3 color = 0;
-    float totalWeight = 0;
+    float3 color1 = 0, color2 = 0;
+    float totalWeight1 = 0, totalWeight2 = 0;
 
     const int maxSamples = 16;
     int sampleCount = clamp((int)(coc * 2), 1, maxSamples);
     float step = coc / sampleCount;
 
     float angle1 = radians(60);
-    float2 dir1 = float2(cos(angle1), sin(angle1));
     float angle2 = radians(-60);
+    float2 dir1 = float2(cos(angle1), sin(angle1));
     float2 dir2 = float2(cos(angle2), sin(angle2));
 
     [unroll(33)]
@@ -107,22 +103,26 @@ float3 HexagonalBokehDiagonal(float2 uv)
         if (abs(i) > sampleCount) continue;
 
         float offset = i * step;
-        float weight = 1.0 - abs(i) / (float)(sampleCount + 1);
-        weight *= weight;
 
         float2 sampleUV1 = uv + dir1 * offset * (_ScaledScreenParams.zw - 1.0);
         float2 sampleUV2 = uv + dir2 * offset * (_ScaledScreenParams.zw - 1.0);
 
-        // Check bounds for both diagonal samples
+        // Check bounds and accumulate separately for each direction
         bool inBounds1 = sampleUV1.x >= 0.0 && sampleUV1.x <= 1.0 && sampleUV1.y >= 0.0 && sampleUV1.y <= 1.0;
         bool inBounds2 = sampleUV2.x >= 0.0 && sampleUV2.x <= 1.0 && sampleUV2.y >= 0.0 && sampleUV2.y <= 1.0;
 
-        if (inBounds1) color += SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, sampleUV1, 0).rgb * weight * 0.5;
-        if (inBounds2) color += SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, sampleUV2, 0).rgb * weight * 0.5;
-        totalWeight += weight;
+        if (inBounds1) color1 += SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, sampleUV1, 0).rgb;
+        if (inBounds2) color2 += SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, sampleUV2, 0).rgb;
+        
+        totalWeight1++;
+        totalWeight2++;
     }
 
-    return totalWeight > 0 ? color / totalWeight : SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, uv, 0).rgb;
+    // Normalize each direction separately, then take minimum
+    float3 result1 = totalWeight1 > 0 ? color1 / totalWeight1 : SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, uv, 0).rgb;
+    float3 result2 = totalWeight2 > 0 ? color2 / totalWeight2 : SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, uv, 0).rgb;
+    
+    return min(result1, result2);
 }
 
 float4 FragHorizontal(float4 position : SV_Position,
