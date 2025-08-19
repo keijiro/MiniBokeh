@@ -7,10 +7,7 @@ HLSLINCLUDE
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
 
 TEXTURE2D(_PrimaryTex);
-SAMPLER(sampler_PrimaryTex);
-
 TEXTURE2D(_SecondaryTex);
-SAMPLER(sampler_SecondaryTex);
 
 float4 _PlaneEquation;
 float _FocusDistance;
@@ -40,6 +37,28 @@ float CalculateCoC(float depth)
     return coc * maxBlurRadiusPixels;
 }
 
+float3 SamplePrimary(float2 uv)
+{
+    return SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_LinearClamp, uv, 0).rgb;
+}
+
+float3 SampleSecondary(float2 uv)
+{
+    return SAMPLE_TEXTURE2D_LOD(_SecondaryTex, sampler_LinearClamp, uv, 0).rgb;
+}
+
+float3 SamplePrimaryBounded(float2 uv)
+{
+    bool inBounds = all(uv >= 0.0) && all(uv <= 1.0);
+    return inBounds ? SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_LinearClamp, uv, 0).rgb : 0;
+}
+
+float3 SampleSecondaryBounded(float2 uv)
+{
+    bool inBounds = all(uv >= 0.0) && all(uv <= 1.0);
+    return inBounds ? SAMPLE_TEXTURE2D_LOD(_SecondaryTex, sampler_LinearClamp, uv, 0).rgb : 0;
+}
+
 void Vert(uint vertexID : SV_VertexID,
           out float4 outPosition : SV_Position,
           out float2 outTexCoord : TEXCOORD0)
@@ -53,10 +72,9 @@ float3 HexagonalBokehHorizontal(float2 uv)
     float depth = GetDepthFromPlane(uv);
     float coc = CalculateCoC(depth);
 
-    if (coc < 0.5) return SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, uv, 0).rgb;
+    if (coc < 0.5) return SamplePrimary(uv);
 
     float3 color = 0;
-    float totalWeight = 0;
 
     const int maxSamples = 16;
     int sampleCount = clamp((int)(coc * 2), 1, maxSamples);
@@ -70,12 +88,11 @@ float3 HexagonalBokehHorizontal(float2 uv)
         float offset = i * step;
         float2 sampleUV = uv + float2(offset * (_ScaledScreenParams.z - 1.0), 0);
 
-        bool inBounds = sampleUV.x >= 0.0 && sampleUV.x <= 1.0 && sampleUV.y >= 0.0 && sampleUV.y <= 1.0;
-        if (inBounds) color += SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, sampleUV, 0).rgb;
-        totalWeight++;
+        color += SamplePrimaryBounded(sampleUV);
     }
 
-    return totalWeight > 0 ? color / totalWeight : SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, uv, 0).rgb;
+    int totalSamples = sampleCount * 2 + 1;
+    return color / totalSamples;
 }
 
 float3 HexagonalBokehDiagonal(float2 uv)
@@ -83,19 +100,16 @@ float3 HexagonalBokehDiagonal(float2 uv)
     float depth = GetDepthFromPlane(uv);
     float coc = CalculateCoC(depth);
 
-    if (coc < 0.5) return SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, uv, 0).rgb;
+    if (coc < 0.5) return SamplePrimary(uv);
 
     float3 color1 = 0, color2 = 0;
-    float totalWeight1 = 0, totalWeight2 = 0;
 
     const int maxSamples = 16;
     int sampleCount = clamp((int)(coc * 2), 1, maxSamples);
     float step = coc / sampleCount;
 
-    float angle1 = radians(60);
-    float angle2 = radians(-60);
-    float2 dir1 = float2(cos(angle1), sin(angle1));
-    float2 dir2 = float2(cos(angle2), sin(angle2));
+    float2 dir1 = float2(0.5, 0.866025);     // 60 degrees
+    float2 dir2 = float2(0.5, -0.866025);    // -60 degrees
 
     [unroll(33)]
     for (int i = -maxSamples; i <= maxSamples; i++)
@@ -107,20 +121,14 @@ float3 HexagonalBokehDiagonal(float2 uv)
         float2 sampleUV1 = uv + dir1 * offset * (_ScaledScreenParams.zw - 1.0);
         float2 sampleUV2 = uv + dir2 * offset * (_ScaledScreenParams.zw - 1.0);
 
-        // Check bounds and accumulate separately for each direction
-        bool inBounds1 = sampleUV1.x >= 0.0 && sampleUV1.x <= 1.0 && sampleUV1.y >= 0.0 && sampleUV1.y <= 1.0;
-        bool inBounds2 = sampleUV2.x >= 0.0 && sampleUV2.x <= 1.0 && sampleUV2.y >= 0.0 && sampleUV2.y <= 1.0;
-
-        if (inBounds1) color1 += SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, sampleUV1, 0).rgb;
-        if (inBounds2) color2 += SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, sampleUV2, 0).rgb;
-        
-        totalWeight1++;
-        totalWeight2++;
+        // Accumulate separately for each direction
+        color1 += SamplePrimaryBounded(sampleUV1);
+        color2 += SamplePrimaryBounded(sampleUV2);
     }
 
-    // Normalize each direction separately, then take minimum
-    float3 result1 = totalWeight1 > 0 ? color1 / totalWeight1 : SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, uv, 0).rgb;
-    float3 result2 = totalWeight2 > 0 ? color2 / totalWeight2 : SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, uv, 0).rgb;
+    int totalSamples = sampleCount * 2 + 1;
+    float3 result1 = color1 / totalSamples;
+    float3 result2 = color2 / totalSamples;
     
     return min(result1, result2);
 }
@@ -143,7 +151,7 @@ float4 FragDiagonal(float4 position : SV_Position,
 float4 FragDownsample(float4 position : SV_Position,
                      float2 texCoord : TEXCOORD0) : SV_Target
 {
-    float3 color = SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, texCoord, 0).rgb;
+    float3 color = SamplePrimary(texCoord);
     return float4(color, 1);
 }
 
@@ -152,10 +160,10 @@ float4 FragUpsampleComposite(float4 position : SV_Position,
                             float2 texCoord : TEXCOORD0) : SV_Target
 {
     // Blurred image from half resolution
-    float3 blurredColor = SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, texCoord, 0).rgb;
+    float3 blurredColor = SamplePrimary(texCoord);
 
     // Original full resolution image
-    float3 originalColor = SAMPLE_TEXTURE2D_LOD(_SecondaryTex, sampler_SecondaryTex, texCoord, 0).rgb;
+    float3 originalColor = SampleSecondary(texCoord);
 
     // Calculate CoC for blending
     float depth = GetDepthFromPlane(texCoord);
