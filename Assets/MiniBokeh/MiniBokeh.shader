@@ -1,4 +1,4 @@
-Shader "Hidden/MiniatureBokeh"
+Shader "Hidden/MiniBokeh"
 {
 HLSLINCLUDE
 

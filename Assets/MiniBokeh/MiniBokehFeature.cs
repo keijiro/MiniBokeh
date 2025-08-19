@@ -4,9 +4,9 @@ using UnityEngine.Rendering.RenderGraphModule;
 using UnityEngine.Rendering.RenderGraphModule.Util;
 using UnityEngine.Rendering.Universal;
 
-namespace MiniatureBokeh {
+namespace MiniBokeh {
 
-sealed class MiniatureBokehPass : ScriptableRenderPass
+sealed class MiniBokehPass : ScriptableRenderPass
 {
     #region Blit pass building methods
 
@@ -57,7 +57,7 @@ sealed class MiniatureBokehPass : ScriptableRenderPass
 
     Material _material;
 
-    public MiniatureBokehPass(Material material)
+    public MiniBokehPass(Material material)
       => _material = material;
 
     public override void RecordRenderGraph
@@ -66,16 +66,16 @@ sealed class MiniatureBokehPass : ScriptableRenderPass
         var camera = context.Get<UniversalCameraData>().camera;
         var resource = context.Get<UniversalResourceData>();
 
-        var ctrl = camera.GetComponent<MiniatureBokehController>();
+        var ctrl = camera.GetComponent<MiniBokehController>();
         if (ctrl == null || !ctrl.enabled || !ctrl.IsReady) return;
 
-        if (ctrl.DownsampleMode == MiniatureBokehController.ResolutionMode.Half)
+        if (ctrl.DownsampleMode == MiniBokehController.ResolutionMode.Half)
             RecordHalfResolutionPipeline(graph, resource, ctrl);
         else
             RecordFullResolutionPipeline(graph, resource, ctrl);
     }
 
-    void RecordFullResolutionPipeline(RenderGraph graph, UniversalResourceData resource, MiniatureBokehController ctrl)
+    void RecordFullResolutionPipeline(RenderGraph graph, UniversalResourceData resource, MiniBokehController ctrl)
     {
         var source = resource.activeColorTexture;
         var desc = graph.GetTextureDesc(source);
@@ -98,7 +98,7 @@ sealed class MiniatureBokehPass : ScriptableRenderPass
         resource.cameraColor = dest;
     }
 
-    void RecordHalfResolutionPipeline(RenderGraph graph, UniversalResourceData resource, MiniatureBokehController ctrl)
+    void RecordHalfResolutionPipeline(RenderGraph graph, UniversalResourceData resource, MiniBokehController ctrl)
     {
         var source = resource.activeColorTexture;
 
@@ -151,17 +151,17 @@ sealed class MiniatureBokehPass : ScriptableRenderPass
     #endregion
 }
 
-public sealed class MiniatureBokehFeature : ScriptableRendererFeature
+public sealed class MiniBokehFeature : ScriptableRendererFeature
 {
     [SerializeField, HideInInspector] Shader _shader = null;
 
     Material _material;
-    MiniatureBokehPass _pass;
+    MiniBokehPass _pass;
 
     public override void Create()
     {
         _material = CoreUtils.CreateEngineMaterial(_shader);
-        _pass = new MiniatureBokehPass(_material);
+        _pass = new MiniBokehPass(_material);
         _pass.renderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing;
     }
 
@@ -173,4 +173,4 @@ public sealed class MiniatureBokehFeature : ScriptableRendererFeature
     }
 }
 
-} // namespace MiniatureBokeh
+} // namespace MiniBokeh

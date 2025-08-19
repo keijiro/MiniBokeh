@@ -1,7 +1,7 @@
 using UnityEngine;
 
 [ExecuteInEditMode, RequireComponent(typeof(Camera))]
-public sealed partial class MiniatureBokehController : MonoBehaviour
+public sealed partial class MiniBokehController : MonoBehaviour
 {
     #region Public properties
 
