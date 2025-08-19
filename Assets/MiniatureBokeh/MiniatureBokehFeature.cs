@@ -4,7 +4,7 @@ using UnityEngine.Rendering.RenderGraphModule;
 using UnityEngine.Rendering.RenderGraphModule.Util;
 using UnityEngine.Rendering.Universal;
 
-namespace MiniatureBokeh { 
+namespace MiniatureBokeh {
 
 sealed class MiniatureBokehPass : ScriptableRenderPass
 {
@@ -69,6 +69,14 @@ sealed class MiniatureBokehPass : ScriptableRenderPass
         var ctrl = camera.GetComponent<MiniatureBokehController>();
         if (ctrl == null || !ctrl.enabled || !ctrl.IsReady) return;
 
+        if (ctrl.DownsampleMode == MiniatureBokehController.ResolutionMode.Half)
+            RecordHalfResolutionPipeline(graph, resource, ctrl);
+        else
+            RecordFullResolutionPipeline(graph, resource, ctrl);
+    }
+
+    void RecordFullResolutionPipeline(RenderGraph graph, UniversalResourceData resource, MiniatureBokehController ctrl)
+    {
         var source = resource.activeColorTexture;
         var desc = graph.GetTextureDesc(source);
         desc.name = "MiniBokeh Temp";
@@ -83,9 +91,59 @@ sealed class MiniatureBokehPass : ScriptableRenderPass
         desc.name = "MiniBokeh Final";
         var dest = graph.CreateTexture(desc);
 
-        AddBlitPasss(graph, "MiniBokeh Horizontal",
+        AddBlitPasss(graph, "MiniBokeh Diagonal",
                      temp, TextureHandle.nullHandle, dest,
                      ctrl.MaterialProperties, 1);
+
+        resource.cameraColor = dest;
+    }
+
+    void RecordHalfResolutionPipeline(RenderGraph graph, UniversalResourceData resource, MiniatureBokehController ctrl)
+    {
+        var source = resource.activeColorTexture;
+
+        // Create half resolution textures
+        var halfDesc = graph.GetTextureDesc(source);
+        halfDesc.width /= 2;
+        halfDesc.height /= 2;
+        halfDesc.clearBuffer = false;
+        halfDesc.depthBufferBits = 0;
+
+        // Downsample to half resolution
+        halfDesc.name = "MiniBokeh Half Source";
+        var halfSource = graph.CreateTexture(halfDesc);
+
+        AddBlitPasss(graph, "MiniBokeh Downsample",
+                     source, TextureHandle.nullHandle, halfSource,
+                     ctrl.MaterialProperties, 2);
+
+        // Horizontal blur at half resolution
+        halfDesc.name = "MiniBokeh Half Temp";
+        var halfTemp = graph.CreateTexture(halfDesc);
+
+        AddBlitPasss(graph, "MiniBokeh Horizontal Half",
+                     halfSource, TextureHandle.nullHandle, halfTemp,
+                     ctrl.MaterialProperties, 0);
+
+        // Diagonal blur at half resolution
+        halfDesc.name = "MiniBokeh Half Final";
+        var halfFinal = graph.CreateTexture(halfDesc);
+
+        AddBlitPasss(graph, "MiniBokeh Diagonal Half",
+                     halfTemp, TextureHandle.nullHandle, halfFinal,
+                     ctrl.MaterialProperties, 1);
+
+        // Upsample and composite back to full resolution
+        var fullDesc = graph.GetTextureDesc(source);
+        fullDesc.name = "MiniBokeh Final";
+        fullDesc.clearBuffer = false;
+        fullDesc.depthBufferBits = 0;
+        var dest = graph.CreateTexture(fullDesc);
+
+        // Use both primary (blurred half-res) and secondary (original full-res) textures
+        AddBlitPasss(graph, "MiniBokeh Upsample",
+                     halfFinal, source, dest,
+                     ctrl.MaterialProperties, 3);
 
         resource.cameraColor = dest;
     }

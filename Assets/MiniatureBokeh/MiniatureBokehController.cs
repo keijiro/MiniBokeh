@@ -5,6 +5,12 @@ public sealed partial class MiniatureBokehController : MonoBehaviour
 {
     #region Public properties
 
+    public enum ResolutionMode
+    {
+        Full = 1,
+        Half = 2
+    }
+
     [field: SerializeField]
     public Transform ReferencePlane { get; set; } = null;
 
@@ -19,6 +25,9 @@ public sealed partial class MiniatureBokehController : MonoBehaviour
 
     [field: SerializeField, Range(0.1f, 5f)]
     public float MaxBlurRadius { get; set; } = 1f;
+
+    [field: SerializeField]
+    public ResolutionMode DownsampleMode { get; set; } = ResolutionMode.Full;
 
     #endregion
 

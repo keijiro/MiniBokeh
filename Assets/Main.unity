@@ -625,6 +625,7 @@ MonoBehaviour:
   <FocusDistance>k__BackingField: 15
   <BokehIntensity>k__BackingField: 5
   <MaxBlurRadius>k__BackingField: 5
+  <DownsampleMode>k__BackingField: 2
 --- !u!1 &1602446955
 GameObject:
   m_ObjectHideFlags: 0

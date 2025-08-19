@@ -133,6 +133,34 @@ float4 FragDiagonal(float4 position : SV_Position,
     return float4(color, 1);
 }
 
+// Simple downsample pass - bilinear filtering will be applied automatically
+float4 FragDownsample(float4 position : SV_Position,
+                     float2 texCoord : TEXCOORD0) : SV_Target
+{
+    float3 color = SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, texCoord, 0).rgb;
+    return float4(color, 1);
+}
+
+// Upsample and composite - PrimaryTex is the blurred half-res, SecondaryTex is the original full-res
+float4 FragUpsampleComposite(float4 position : SV_Position,
+                            float2 texCoord : TEXCOORD0) : SV_Target
+{
+    // Blurred image from half resolution
+    float3 blurredColor = SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, texCoord, 0).rgb;
+
+    // Original full resolution image
+    float3 originalColor = SAMPLE_TEXTURE2D_LOD(_SecondaryTex, sampler_SecondaryTex, texCoord, 0).rgb;
+
+    // Calculate CoC for blending
+    float depth = GetDepthFromPlane(texCoord);
+    float coc = CalculateCoC(depth);
+
+    // Smooth blend based on CoC
+    float blendFactor = smoothstep(0.0, 2.0, coc);
+
+    return float4(lerp(originalColor, blurredColor, blendFactor), 1);
+}
+
 ENDHLSL
 
     SubShader
@@ -154,6 +182,24 @@ ENDHLSL
             HLSLPROGRAM
             #pragma vertex Vert
             #pragma fragment FragDiagonal
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "DownsamplePass"
+            HLSLPROGRAM
+            #pragma vertex Vert
+            #pragma fragment FragDownsample
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "UpsampleCompositePass"
+            HLSLPROGRAM
+            #pragma vertex Vert
+            #pragma fragment FragUpsampleComposite
             ENDHLSL
         }
     }
