@@ -48,7 +48,8 @@ float3 SampleSecondaryBounded(float2 uv)
 // Depth and CoC (Circle of Confusion) calculation
 float GetDepthFromPlane(float2 screenPos)
 {
-    float4 worldPos = mul(UNITY_MATRIX_I_VP, float4(screenPos * 2 - 1, 0, 1));
+    float4 ndcPos = float4(screenPos.x * 2 - 1, 1 - screenPos.y * 2, 0, 1);
+    float4 worldPos = mul(UNITY_MATRIX_I_VP, ndcPos);
     worldPos /= worldPos.w;
 
     float3 rayOrigin = _WorldSpaceCameraPos;
@@ -173,8 +174,8 @@ float4 FragUpsampleComposite(float4 position : SV_Position,
     // Calculate CoC for blending
     float coc = CalculateCoC(GetDepthFromPlane(texCoord));
 
-    // Smooth blend based on CoC
-    float blendFactor = smoothstep(0.0, 2.0, coc);
+    // Linear transition for most natural look
+    float blendFactor = saturate((coc - 0.5) / (4.0 - 0.5));
 
     return float4(lerp(originalColor, blurredColor, blendFactor), 1);
 }

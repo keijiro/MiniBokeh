@@ -17,13 +17,13 @@ public sealed partial class MiniBokehController : MonoBehaviour
     [field: SerializeField]
     public bool AutoFocus { get; set; } = true;
 
-    [field: SerializeField, Range(0.1f, 100f)]
+    [field: SerializeField]
     public float FocusDistance { get; set; } = 10f;
 
     [field: SerializeField, Range(0f, 5f)]
     public float BokehIntensity { get; set; } = 1f;
 
-    [field: SerializeField, Range(0.1f, 5f)]
+    [field: SerializeField, Range(0.1f, 10f)]
     public float MaxBlurRadius { get; set; } = 1f;
 
     [field: SerializeField]
