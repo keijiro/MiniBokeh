@@ -73,7 +73,9 @@ float3 HexagonalBokehHorizontal(float2 uv)
         float weight = 1.0 - abs(i) / (float)(sampleCount + 1);
         weight *= weight;
 
-        color += SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, sampleUV, 0).rgb * weight;
+        // Check bounds for horizontal sample
+        bool inBounds = sampleUV.x >= 0.0 && sampleUV.x <= 1.0 && sampleUV.y >= 0.0 && sampleUV.y <= 1.0;
+        if (inBounds) color += SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, sampleUV, 0).rgb * weight;
         totalWeight += weight;
     }
 
@@ -111,8 +113,12 @@ float3 HexagonalBokehDiagonal(float2 uv)
         float2 sampleUV1 = uv + dir1 * offset * (_ScaledScreenParams.zw - 1.0);
         float2 sampleUV2 = uv + dir2 * offset * (_ScaledScreenParams.zw - 1.0);
 
-        color += SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, sampleUV1, 0).rgb * weight * 0.5;
-        color += SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, sampleUV2, 0).rgb * weight * 0.5;
+        // Check bounds for both diagonal samples
+        bool inBounds1 = sampleUV1.x >= 0.0 && sampleUV1.x <= 1.0 && sampleUV1.y >= 0.0 && sampleUV1.y <= 1.0;
+        bool inBounds2 = sampleUV2.x >= 0.0 && sampleUV2.x <= 1.0 && sampleUV2.y >= 0.0 && sampleUV2.y <= 1.0;
+
+        if (inBounds1) color += SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, sampleUV1, 0).rgb * weight * 0.5;
+        if (inBounds2) color += SAMPLE_TEXTURE2D_LOD(_PrimaryTex, sampler_PrimaryTex, sampleUV2, 0).rgb * weight * 0.5;
         totalWeight += weight;
     }
 
