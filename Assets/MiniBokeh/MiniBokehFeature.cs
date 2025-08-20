@@ -8,7 +8,42 @@ namespace MiniBokeh {
 
 sealed class MiniBokehPass : ScriptableRenderPass
 {
-    #region Blit pass building methods
+    #region Constructor
+
+    Material _material;
+
+    public MiniBokehPass(Material material)
+      => _material = material;
+
+    #endregion
+
+    #region Texture allocation helpers
+
+    static TextureHandle AllocFullResTempTexture
+      (RenderGraph graph, TextureHandle source, string name)
+    {
+        var desc = graph.GetTextureDesc(source);
+        desc.name = name;
+        desc.clearBuffer = false;
+        desc.depthBufferBits = 0;
+        return graph.CreateTexture(desc);
+    }
+
+    static TextureHandle AllocHalfResTempTexture
+      (RenderGraph graph, TextureHandle source, string name)
+    {
+        var desc = graph.GetTextureDesc(source);
+        desc.name = name;
+        desc.width /= 2;
+        desc.height /= 2;
+        desc.clearBuffer = false;
+        desc.depthBufferBits = 0;
+        return graph.CreateTexture(desc);
+    }
+
+    #endregion
+
+    #region Blit pass builer
 
     class PassData
     {
@@ -36,7 +71,6 @@ sealed class MiniBokehPass : ScriptableRenderPass
         if (secondary.IsValid()) builder.UseTexture(secondary);
 
         builder.SetRenderAttachment(dest, 0);
-
         builder.SetRenderFunc((PassData data, RasterGraphContext ctx) => ExecutePass(data, ctx));
     }
 
@@ -55,11 +89,6 @@ sealed class MiniBokehPass : ScriptableRenderPass
 
     #region Render pass implementation
 
-    Material _material;
-
-    public MiniBokehPass(Material material)
-      => _material = material;
-
     public override void RecordRenderGraph
       (RenderGraph graph, ContextContainer context)
     {
@@ -75,74 +104,48 @@ sealed class MiniBokehPass : ScriptableRenderPass
             RecordFullResolutionPipeline(graph, resource, ctrl);
     }
 
-    void RecordFullResolutionPipeline(RenderGraph graph, UniversalResourceData resource, MiniBokehController ctrl)
+    void RecordFullResolutionPipeline
+      (RenderGraph graph, UniversalResourceData resource, MiniBokehController ctrl)
     {
         var source = resource.activeColorTexture;
-        var desc = graph.GetTextureDesc(source);
-        desc.name = "MiniBokeh Temp";
-        desc.clearBuffer = false;
-        desc.depthBufferBits = 0;
-        var temp = graph.CreateTexture(desc);
+        var temp = AllocFullResTempTexture(graph, source, "MiniBokeh Temp");
 
         AddBlitPasss(graph, "MiniBokeh Horizontal",
                      source, TextureHandle.nullHandle, temp,
                      ctrl.MaterialProperties, 0);
 
-        desc.name = "MiniBokeh Final";
-        var dest = graph.CreateTexture(desc);
-
         AddBlitPasss(graph, "MiniBokeh Diagonal",
-                     temp, TextureHandle.nullHandle, dest,
+                     temp, TextureHandle.nullHandle, source,
                      ctrl.MaterialProperties, 1);
-
-        resource.cameraColor = dest;
     }
 
-    void RecordHalfResolutionPipeline(RenderGraph graph, UniversalResourceData resource, MiniBokehController ctrl)
+    void RecordHalfResolutionPipeline
+      (RenderGraph graph, UniversalResourceData resource, MiniBokehController ctrl)
     {
         var source = resource.activeColorTexture;
 
-        // Create half resolution textures
-        var halfDesc = graph.GetTextureDesc(source);
-        halfDesc.width /= 2;
-        halfDesc.height /= 2;
-        halfDesc.clearBuffer = false;
-        halfDesc.depthBufferBits = 0;
+        var temp1 = AllocHalfResTempTexture(graph, source, "MiniBokeh Half 1");
+        var temp2 = AllocHalfResTempTexture(graph, source, "MiniBokeh Half 2");
+        var dest = AllocFullResTempTexture(graph, source, "MiniBokeh Composite");
 
         // Downsample to half resolution
-        halfDesc.name = "MiniBokeh Half Source";
-        var halfSource = graph.CreateTexture(halfDesc);
-
         AddBlitPasss(graph, "MiniBokeh Downsample",
-                     source, TextureHandle.nullHandle, halfSource,
+                     source, TextureHandle.nullHandle, temp1,
                      ctrl.MaterialProperties, 2);
 
         // Horizontal blur at half resolution
-        halfDesc.name = "MiniBokeh Half Temp";
-        var halfTemp = graph.CreateTexture(halfDesc);
-
         AddBlitPasss(graph, "MiniBokeh Horizontal Half",
-                     halfSource, TextureHandle.nullHandle, halfTemp,
+                     temp1, TextureHandle.nullHandle, temp2,
                      ctrl.MaterialProperties, 0);
 
         // Diagonal blur at half resolution
-        halfDesc.name = "MiniBokeh Half Final";
-        var halfFinal = graph.CreateTexture(halfDesc);
-
         AddBlitPasss(graph, "MiniBokeh Diagonal Half",
-                     halfTemp, TextureHandle.nullHandle, halfFinal,
+                     temp2, TextureHandle.nullHandle, temp1,
                      ctrl.MaterialProperties, 1);
 
         // Upsample and composite back to full resolution
-        var fullDesc = graph.GetTextureDesc(source);
-        fullDesc.name = "MiniBokeh Final";
-        fullDesc.clearBuffer = false;
-        fullDesc.depthBufferBits = 0;
-        var dest = graph.CreateTexture(fullDesc);
-
-        // Use both primary (blurred half-res) and secondary (original full-res) textures
         AddBlitPasss(graph, "MiniBokeh Upsample",
-                     halfFinal, source, dest,
+                     temp1, source, dest,
                      ctrl.MaterialProperties, 3);
 
         resource.cameraColor = dest;

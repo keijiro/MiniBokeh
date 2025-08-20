@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEditor;
 
+namespace MiniBokeh {
+
 [CustomEditor(typeof(MiniBokehController))]
 class MiniBokehControllerEditor : Editor
 {
@@ -77,3 +79,5 @@ class MiniBokehControllerEditor : Editor
         return _focusDistance.floatValue;
     }
 }
+
+} // namespace MiniBokeh
