@@ -13,10 +13,10 @@ sealed class MiniBokehPass : ScriptableRenderPass
 
     enum ShaderPass
     {
-        HexagonalHorizontal = 0,
-        HexagonalDiagonal = 1,
-        Downsample = 2,
-        UpsampleComposite = 3,
+        Downsample = 0,
+        UpsampleComposite = 1,
+        HexagonalHorizontal = 2,
+        HexagonalDiagonal = 3,
         CircularHorizMRT = 4,
         CircularVerticalComposite = 5
     }
