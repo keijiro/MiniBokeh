@@ -1,6 +1,11 @@
 #ifndef MINIBOKEH_CIRCULARSEPARABLE_INCLUDED
 #define MINIBOKEH_CIRCULARSEPARABLE_INCLUDED
 
+// Citation: Garcia, K. (2017). "Circular Separable Convolution Depth of Field".
+// doi:10.1145/3084363.3085022
+// Based on the author's Shadertoy implementation and accompanying notes.
+// Shadertoy: https://www.shadertoy.com/view/Xd2BWc
+
 #include "Common.hlsl"
 
 // Kernel constants from ShaderToy implementation

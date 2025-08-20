@@ -1,6 +1,11 @@
 #ifndef MINIBOKEH_HEXSEPARABLE_INCLUDED
 #define MINIBOKEH_HEXSEPARABLE_INCLUDED
 
+// Citation: McIntosh, L.; Riecke, B. E.; DiPaola, S. (2012).
+// "Efficiently Simulating the Bokeh of Polygonal Apertures in a Post-Process
+// Depth of Field Shader". Computer Graphics Forum (Eurographics).
+// doi:10.1111/j.1467-8659.2012.02097.x
+
 #include "Common.hlsl"
 
 float3 HexagonalBokehHorizontal(float2 uv)
