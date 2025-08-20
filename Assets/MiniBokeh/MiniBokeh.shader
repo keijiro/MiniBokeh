@@ -73,61 +73,82 @@ float CalculateCoC(float depth)
 // Separable blur filters for hexagonal bokeh
 float3 HexagonalBokehHorizontal(float2 uv)
 {
-    float coc = CalculateCoC(GetDepthFromPlane(uv));
-    if (coc < 0.5) return SamplePrimary(uv);
-
-    float3 color = 0;
-
+    float3 color = SamplePrimary(uv);
+    float totalWeight = 1.0;
+    
+    // Determine maximum sample range based on potential CoC in the scene
+    float maxCoCRange = _MaxBlurRadius * 0.01 * _ScaledScreenParams.y;
     const int maxSamples = 16;
-    int sampleCount = clamp((int)(coc * 2), 1, maxSamples);
-    float step = coc / sampleCount;
-
+    
     [unroll(33)]
     for (int i = -maxSamples; i <= maxSamples; i++)
     {
-        if (abs(i) > sampleCount) continue;
-
-        float offset = i * step;
-        float2 sampleUV = uv + float2(offset * RCP_WIDTH, 0);
-
-        color += SamplePrimaryBounded(sampleUV);
+        if (i == 0) continue;
+        
+        // Scale sample position by the maximum possible range
+        float samplePos = (float)i / maxSamples * maxCoCRange;
+        float2 sampleUV = uv + float2(samplePos * RCP_WIDTH, 0);
+        
+        // Calculate CoC at the sample location
+        float sampleCoC = CalculateCoC(GetDepthFromPlane(sampleUV));
+        
+        // Check if this sample's CoC reaches our current pixel
+        if (abs(samplePos) <= sampleCoC)
+        {
+            color += SamplePrimaryBounded(sampleUV);
+            totalWeight += 1.0;
+        }
     }
-
-    int totalSamples = sampleCount * 2 + 1;
-    return color / totalSamples;
+    
+    return color / totalWeight;
 }
 
 float3 HexagonalBokehDiagonal(float2 uv)
 {
-    float coc = CalculateCoC(GetDepthFromPlane(uv));
-    if (coc < 0.5) return SamplePrimary(uv);
-
-    float3 color1 = 0, color2 = 0;
-
+    float3 color1 = SamplePrimary(uv);
+    float3 color2 = SamplePrimary(uv);
+    float totalWeight1 = 1.0;
+    float totalWeight2 = 1.0;
+    
+    // Determine maximum sample range based on potential CoC in the scene
+    float maxCoCRange = _MaxBlurRadius * 0.01 * _ScaledScreenParams.y;
     const int maxSamples = 16;
-    int sampleCount = clamp((int)(coc * 2), 1, maxSamples);
-    float step = coc / sampleCount;
-
+    
     float2 dir1 = float2(0.5,  0.866025);    // +60 degrees
     float2 dir2 = float2(0.5, -0.866025);    // -60 degrees
 
     [unroll(33)]
     for (int i = -maxSamples; i <= maxSamples; i++)
     {
-        if (abs(i) > sampleCount) continue;
-
-        float offset = i * step;
-
-        float2 sampleUV1 = uv + dir1 * offset * RCP_WIDTH_HEIGHT;
-        float2 sampleUV2 = uv + dir2 * offset * RCP_WIDTH_HEIGHT;
-
-        color1 += SamplePrimaryBounded(sampleUV1);
-        color2 += SamplePrimaryBounded(sampleUV2);
+        if (i == 0) continue;
+        
+        // Scale sample position by the maximum possible range
+        float samplePos = (float)i / maxSamples * maxCoCRange;
+        float2 sampleUV1 = uv + dir1 * samplePos * RCP_WIDTH_HEIGHT;
+        float2 sampleUV2 = uv + dir2 * samplePos * RCP_WIDTH_HEIGHT;
+        
+        // Calculate CoC at the sample locations
+        float sampleCoC1 = CalculateCoC(GetDepthFromPlane(sampleUV1));
+        float sampleCoC2 = CalculateCoC(GetDepthFromPlane(sampleUV2));
+        
+        // Check if samples' CoC reach our current pixel
+        float distance = abs(samplePos) * length(dir1);
+        
+        if (distance <= sampleCoC1)
+        {
+            color1 += SamplePrimaryBounded(sampleUV1);
+            totalWeight1 += 1.0;
+        }
+        
+        if (distance <= sampleCoC2)
+        {
+            color2 += SamplePrimaryBounded(sampleUV2);
+            totalWeight2 += 1.0;
+        }
     }
-
-    int totalSamples = sampleCount * 2 + 1;
-    float3 result1 = color1 / totalSamples;
-    float3 result2 = color2 / totalSamples;
+    
+    float3 result1 = color1 / totalWeight1;
+    float3 result2 = color2 / totalWeight2;
     
     return min(result1, result2);
 }
