@@ -115,14 +115,19 @@ float CalculateCoC(float depth)
 
 // Complex circular DOF implementation
 
-// Pass 1: Red channel horizontal convolution
-float4 FragHorizR(float4 position : SV_Position,
-                  float2 texCoord : TEXCOORD0) : SV_Target
+
+// MRT Pass: All RGB channels horizontal convolution
+void FragHorizMRT(float4 position : SV_Position, float2 texCoord : TEXCOORD0,
+                  out float4 target0 : SV_Target0,  // R channel result
+                  out float4 target1 : SV_Target1,  // G channel result
+                  out float4 target2 : SV_Target2)  // B channel result
 {
     float coc = CalculateCoC(GetDepthFromPlane(texCoord));
     float filterRadius = coc / (0.01 * _ScaledScreenParams.y);
 
-    float4 val = float4(0, 0, 0, 0);
+    float4 rVal = float4(0, 0, 0, 0);
+    float4 gVal = float4(0, 0, 0, 0);
+    float4 bVal = float4(0, 0, 0, 0);
 
     [unroll(KERNEL_COUNT)]
     for (int i = 0; i < KERNEL_COUNT; i++)
@@ -130,76 +135,26 @@ float4 FragHorizR(float4 position : SV_Position,
         int kernelIdx = i - KERNEL_RADIUS;
         float2 coords = texCoord + float2(kernelIdx * filterRadius * RCP_WIDTH, 0);
 
-        float imageTexelR = 0;
+        float3 imageTexel = float3(0, 0, 0);
         if (all(coords >= 0.0) && all(coords <= 1.0))
         {
-            imageTexelR = SAMPLE_TEXTURE2D_LOD(_Texture1, sampler_LinearClamp, coords, 0).r;
+            imageTexel = SAMPLE_TEXTURE2D_LOD(_Texture1, sampler_LinearClamp, coords, 0).rgb;
         }
 
         float4 kernels = CombinedKernels[i];
-        val.xy += imageTexelR * kernels.xy;  // Kernel0
-        val.zw += imageTexelR * kernels.zw;  // Kernel1
+        rVal.xy += imageTexel.r * kernels.xy;  // Kernel0
+        rVal.zw += imageTexel.r * kernels.zw;  // Kernel1
+
+        gVal.xy += imageTexel.g * kernels.xy;  // Kernel0
+        gVal.zw += imageTexel.g * kernels.zw;  // Kernel1
+
+        bVal.xy += imageTexel.b * kernels.xy;  // Kernel0
+        bVal.zw += imageTexel.b * kernels.zw;  // Kernel1
     }
 
-    return val;
-}
-
-// Pass 2: Green channel horizontal convolution
-float4 FragHorizG(float4 position : SV_Position,
-                  float2 texCoord : TEXCOORD0) : SV_Target
-{
-    float coc = CalculateCoC(GetDepthFromPlane(texCoord));
-    float filterRadius = coc / (0.01 * _ScaledScreenParams.y);
-
-    float4 val = float4(0, 0, 0, 0);
-
-    [unroll(KERNEL_COUNT)]
-    for (int i = 0; i < KERNEL_COUNT; i++)
-    {
-        int kernelIdx = i - KERNEL_RADIUS;
-        float2 coords = texCoord + float2(kernelIdx * filterRadius * RCP_WIDTH, 0);
-
-        float imageTexelG = 0;
-        if (all(coords >= 0.0) && all(coords <= 1.0))
-        {
-            imageTexelG = SAMPLE_TEXTURE2D_LOD(_Texture1, sampler_LinearClamp, coords, 0).g;
-        }
-
-        float4 kernels = CombinedKernels[i];
-        val.xy += imageTexelG * kernels.xy;  // Kernel0
-        val.zw += imageTexelG * kernels.zw;  // Kernel1
-    }
-
-    return val;
-}
-
-// Pass 3: Blue channel horizontal convolution
-float4 FragHorizB(float4 position : SV_Position,
-                  float2 texCoord : TEXCOORD0) : SV_Target
-{
-    float coc = CalculateCoC(GetDepthFromPlane(texCoord));
-    float filterRadius = coc / (0.01 * _ScaledScreenParams.y);
-
-    float4 val = float4(0, 0, 0, 0);
-
-    [unroll(KERNEL_COUNT)]
-    for (int i = 0; i < KERNEL_COUNT; i++)
-    {
-        int kernelIdx = i - KERNEL_RADIUS;
-        float2 coords = texCoord + float2(kernelIdx * filterRadius * RCP_WIDTH, 0);
-
-        float imageTexelB = 0;
-        if (all(coords >= 0.0) && all(coords <= 1.0))
-        {
-            imageTexelB = SAMPLE_TEXTURE2D_LOD(_Texture1, sampler_LinearClamp, coords, 0).b;
-        }
-
-        float4 kernels = CombinedKernels[i];
-        val.xy += imageTexelB * kernels.xy;  // Kernel0
-        val.zw += imageTexelB * kernels.zw;  // Kernel1
-    }
-
-    return val;
+    target0 = rVal;
+    target1 = gVal;
+    target2 = bVal;
 }
 
 // Pass 4: Vertical composite with complex operations
@@ -404,28 +359,10 @@ ENDHLSL
 
         Pass
         {
-            Name "HorizRPass"
+            Name "HorizMRTPass"
             HLSLPROGRAM
             #pragma vertex Vert
-            #pragma fragment FragHorizR
-            ENDHLSL
-        }
-
-        Pass
-        {
-            Name "HorizGPass"
-            HLSLPROGRAM
-            #pragma vertex Vert
-            #pragma fragment FragHorizG
-            ENDHLSL
-        }
-
-        Pass
-        {
-            Name "HorizBPass"
-            HLSLPROGRAM
-            #pragma vertex Vert
-            #pragma fragment FragHorizB
+            #pragma fragment FragHorizMRT
             ENDHLSL
         }
 

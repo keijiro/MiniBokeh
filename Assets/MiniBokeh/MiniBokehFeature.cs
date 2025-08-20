@@ -9,6 +9,20 @@ namespace MiniBokeh {
 
 sealed class MiniBokehPass : ScriptableRenderPass
 {
+    #region Private enums
+
+    enum ShaderPass
+    {
+        HexagonalHorizontal = 0,
+        HexagonalDiagonal = 1,
+        Downsample = 2,
+        UpsampleComposite = 3,
+        CircularHorizMRT = 4,
+        CircularVerticalComposite = 5
+    }
+
+    #endregion
+
     #region Constructor
 
     Material _material;
@@ -78,14 +92,14 @@ sealed class MiniBokehPass : ScriptableRenderPass
         public TextureHandle texture4;
         public Material material;
         public MaterialPropertyBlock properties;
-        public int passIndex;
+        public ShaderPass passIndex;
     }
 
-    // 4-texture version (main implementation)
+    // Multiple inputs → Single output (legacy compatibility)
     void AddBlitPass
       (RenderGraph graph, string name,
        TextureHandle texture1, TextureHandle texture2, TextureHandle texture3, TextureHandle texture4, TextureHandle dest,
-       MaterialPropertyBlock properties, int passIndex)
+       MaterialPropertyBlock properties, ShaderPass passIndex)
     {
         using var builder = graph.AddRasterRenderPass<PassData>(name, out var passData);
 
@@ -106,22 +120,53 @@ sealed class MiniBokehPass : ScriptableRenderPass
         builder.SetRenderFunc((PassData data, RasterGraphContext ctx) => ExecutePass(data, ctx));
     }
 
-    // 2-texture version (convenience overload)
+    // Tuple-based overloads
     void AddBlitPass
       (RenderGraph graph, string name,
-       TextureHandle texture1, TextureHandle texture2, TextureHandle dest,
-       MaterialPropertyBlock properties, int passIndex)
+       (TextureHandle, TextureHandle, TextureHandle, TextureHandle) inputs, TextureHandle dest,
+       MaterialPropertyBlock properties, ShaderPass passIndex)
     {
-        AddBlitPass(graph, name, texture1, texture2, TextureHandle.nullHandle, TextureHandle.nullHandle, dest, properties, passIndex);
+        AddBlitPass(graph, name, inputs.Item1, inputs.Item2, inputs.Item3, inputs.Item4, dest, properties, passIndex);
     }
 
-    // 1-texture version (convenience overload)
     void AddBlitPass
       (RenderGraph graph, string name,
-       TextureHandle texture1, TextureHandle dest,
-       MaterialPropertyBlock properties, int passIndex)
+       (TextureHandle, TextureHandle) inputs, TextureHandle dest,
+       MaterialPropertyBlock properties, ShaderPass passIndex)
     {
-        AddBlitPass(graph, name, texture1, TextureHandle.nullHandle, TextureHandle.nullHandle, TextureHandle.nullHandle, dest, properties, passIndex);
+        AddBlitPass(graph, name, inputs.Item1, inputs.Item2, TextureHandle.nullHandle, TextureHandle.nullHandle, dest, properties, passIndex);
+    }
+
+    void AddBlitPass
+      (RenderGraph graph, string name,
+       TextureHandle input, TextureHandle dest,
+       MaterialPropertyBlock properties, ShaderPass passIndex)
+    {
+        AddBlitPass(graph, name, input, TextureHandle.nullHandle, TextureHandle.nullHandle, TextureHandle.nullHandle, dest, properties, passIndex);
+    }
+
+    // MRT version: Single input → Multiple outputs
+    void AddBlitPass
+      (RenderGraph graph, string name,
+       TextureHandle input, (TextureHandle, TextureHandle, TextureHandle) outputs,
+       MaterialPropertyBlock properties, ShaderPass passIndex)
+    {
+        using var builder = graph.AddRasterRenderPass<PassData>(name, out var passData);
+
+        passData.texture1 = input;
+        passData.texture2 = TextureHandle.nullHandle;
+        passData.texture3 = TextureHandle.nullHandle;
+        passData.texture4 = TextureHandle.nullHandle;
+        passData.material = _material;
+        passData.properties = properties;
+        passData.passIndex = passIndex;
+
+        if (input.IsValid()) builder.UseTexture(input);
+
+        builder.SetRenderAttachment(outputs.Item1, 0);
+        builder.SetRenderAttachment(outputs.Item2, 1);
+        builder.SetRenderAttachment(outputs.Item3, 2);
+        builder.SetRenderFunc((PassData data, RasterGraphContext ctx) => ExecutePass(data, ctx));
     }
 
     static void ExecutePass(PassData data, RasterGraphContext context)
@@ -138,7 +183,7 @@ sealed class MiniBokehPass : ScriptableRenderPass
         if (data.texture4.IsValid())
             data.properties.SetTexture("_Texture4", data.texture4);
 
-        CoreUtils.DrawFullScreen(context.cmd, data.material, data.properties, data.passIndex);
+        CoreUtils.DrawFullScreen(context.cmd, data.material, data.properties, (int)data.passIndex);
     }
 
     #endregion
@@ -177,10 +222,10 @@ sealed class MiniBokehPass : ScriptableRenderPass
         var temp = AllocFullResTempTexture(graph, source, "MiniBokeh Temp");
 
         AddBlitPass(graph, "MiniBokeh Horizontal",
-                    source, temp, ctrl.MaterialProperties, 0);
+                    source, temp, ctrl.MaterialProperties, ShaderPass.HexagonalHorizontal);
 
         AddBlitPass(graph, "MiniBokeh Diagonal",
-                    temp, source, ctrl.MaterialProperties, 1);
+                    temp, source, ctrl.MaterialProperties, ShaderPass.HexagonalDiagonal);
     }
 
     void RecordHexagonalHalfResPipeline
@@ -194,19 +239,19 @@ sealed class MiniBokehPass : ScriptableRenderPass
 
         // Downsample to half resolution
         AddBlitPass(graph, "MiniBokeh Downsample",
-                    source, temp1, ctrl.MaterialProperties, 2);
+                    source, temp1, ctrl.MaterialProperties, ShaderPass.Downsample);
 
         // Horizontal blur at half resolution
         AddBlitPass(graph, "MiniBokeh Horizontal Half",
-                    temp1, temp2, ctrl.MaterialProperties, 0);
+                    temp1, temp2, ctrl.MaterialProperties, ShaderPass.HexagonalHorizontal);
 
         // Diagonal blur at half resolution
         AddBlitPass(graph, "MiniBokeh Diagonal Half",
-                    temp2, temp1, ctrl.MaterialProperties, 1);
+                    temp2, temp1, ctrl.MaterialProperties, ShaderPass.HexagonalDiagonal);
 
         // Upsample and composite back to full resolution
         AddBlitPass(graph, "MiniBokeh Upsample",
-                    temp1, source, dest, ctrl.MaterialProperties, 3);
+                    (temp1, source), dest, ctrl.MaterialProperties, ShaderPass.UpsampleComposite);
 
         resource.cameraColor = dest;
     }
@@ -225,29 +270,22 @@ sealed class MiniBokehPass : ScriptableRenderPass
     {
         var source = resource.activeColorTexture;
 
-        // Allocate temporary textures for the 4-pass pipeline
+        // Allocate temporary textures for the MRT pipeline
         // Use float textures for intermediate results to store negative values
         var horizR = AllocFullResFloatTexture(graph, source, "CircularDOF HorizR");
         var horizG = AllocFullResFloatTexture(graph, source, "CircularDOF HorizG");
         var horizB = AllocFullResFloatTexture(graph, source, "CircularDOF HorizB");
         var finalResult = AllocFullResTempTexture(graph, source, "CircularDOF Final");
 
-        // Pass 1: Red channel horizontal
-        AddBlitPass(graph, "CircularDOF HorizR",
-                    source, horizR, ctrl.MaterialProperties, 4);
+        // MRT Pass: All RGB channels horizontal convolution in one pass
+        AddBlitPass(graph, "CircularDOF HorizMRT",
+                    source, (horizR, horizG, horizB),
+                    ctrl.MaterialProperties, ShaderPass.CircularHorizMRT);
 
-        // Pass 2: Green channel horizontal
-        AddBlitPass(graph, "CircularDOF HorizG",
-                    source, horizG, ctrl.MaterialProperties, 5);
-
-        // Pass 3: Blue channel horizontal
-        AddBlitPass(graph, "CircularDOF HorizB",
-                    source, horizB, ctrl.MaterialProperties, 6);
-
-        // Pass 4: Vertical composite with all three horizontal results
+        // Pass 2: Vertical composite with all three horizontal results
         AddBlitPass(graph, "CircularDOF Vertical",
-                    source, horizR, horizG, horizB, finalResult,
-                    ctrl.MaterialProperties, 7);
+                    (source, horizR, horizG, horizB), finalResult,
+                    ctrl.MaterialProperties, ShaderPass.CircularVerticalComposite);
 
         resource.cameraColor = finalResult;
     }
@@ -265,25 +303,21 @@ sealed class MiniBokehPass : ScriptableRenderPass
         var blurred = AllocHalfResTempTexture(graph, source, "CircularDOF Blurred Half");
         var finalResult = AllocFullResTempTexture(graph, source, "CircularDOF Final");
 
-        // Pipeline: Downsample → 3x Horizontal → Vertical → Upsample+Composite
+        // Pipeline: Downsample → MRT Horizontal → Vertical → Upsample+Composite
         AddBlitPass(graph, "CircularDOF Downsample",
-                    source, downsampled, ctrl.MaterialProperties, 2);
+                    source, downsampled, ctrl.MaterialProperties, ShaderPass.Downsample);
 
-        AddBlitPass(graph, "CircularDOF HorizR Half",
-                    downsampled, horizR, ctrl.MaterialProperties, 4);
-
-        AddBlitPass(graph, "CircularDOF HorizG Half",
-                    downsampled, horizG, ctrl.MaterialProperties, 5);
-
-        AddBlitPass(graph, "CircularDOF HorizB Half",
-                    downsampled, horizB, ctrl.MaterialProperties, 6);
+        // MRT Pass: All RGB channels horizontal convolution in one pass
+        AddBlitPass(graph, "CircularDOF HorizMRT Half",
+                    downsampled, (horizR, horizG, horizB),
+                    ctrl.MaterialProperties, ShaderPass.CircularHorizMRT);
 
         AddBlitPass(graph, "CircularDOF Vertical Half",
-                    downsampled, horizR, horizG, horizB, blurred,
-                    ctrl.MaterialProperties, 7);
+                    (downsampled, horizR, horizG, horizB), blurred,
+                    ctrl.MaterialProperties, ShaderPass.CircularVerticalComposite);
 
         AddBlitPass(graph, "CircularDOF Upsample",
-                    blurred, source, finalResult, ctrl.MaterialProperties, 3);
+                    (blurred, source), finalResult, ctrl.MaterialProperties, ShaderPass.UpsampleComposite);
 
         resource.cameraColor = finalResult;
     }
