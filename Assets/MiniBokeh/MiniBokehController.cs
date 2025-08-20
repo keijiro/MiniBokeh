@@ -8,6 +8,7 @@ public sealed partial class MiniBokehController : MonoBehaviour
     #region Public properties
 
     public enum ResolutionMode { Full, Half }
+    public enum BokehType { Hexagonal, Circular }
 
     [field: SerializeField]
     public Transform ReferencePlane { get; set; } = null;
@@ -26,6 +27,9 @@ public sealed partial class MiniBokehController : MonoBehaviour
 
     [field: SerializeField]
     public ResolutionMode DownsampleMode { get; set; } = ResolutionMode.Half;
+
+    [field: SerializeField]
+    public BokehType BokehMode { get; set; } = BokehType.Circular;
 
     #endregion
 

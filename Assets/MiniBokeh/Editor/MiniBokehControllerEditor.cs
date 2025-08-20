@@ -12,6 +12,7 @@ class MiniBokehControllerEditor : Editor
     SerializedProperty _bokehIntensity;
     SerializedProperty _maxBlurRadius;
     SerializedProperty _downsampleMode;
+    SerializedProperty _bokehMode;
 
     void OnEnable()
     {
@@ -21,6 +22,7 @@ class MiniBokehControllerEditor : Editor
         _bokehIntensity = serializedObject.FindProperty("<BokehIntensity>k__BackingField");
         _maxBlurRadius = serializedObject.FindProperty("<MaxBlurRadius>k__BackingField");
         _downsampleMode = serializedObject.FindProperty("<DownsampleMode>k__BackingField");
+        _bokehMode = serializedObject.FindProperty("<BokehMode>k__BackingField");
     }
 
     public override void OnInspectorGUI()
@@ -35,6 +37,8 @@ class MiniBokehControllerEditor : Editor
 
         EditorGUILayout.PropertyField(_bokehIntensity);
         EditorGUILayout.PropertyField(_maxBlurRadius);
+
+        EditorGUILayout.PropertyField(_bokehMode);
         EditorGUILayout.PropertyField(_downsampleMode);
 
         if (_bokehIntensity.floatValue > 0)
@@ -46,7 +50,7 @@ class MiniBokehControllerEditor : Editor
 
             var message = $"Dynamic CoC range: {nearDistance:F1} - {farDistance:F1}\nBeyond this range: maximum blur radius";
 
-            EditorGUILayout.HelpBox(message, MessageType.Info);
+            EditorGUILayout.HelpBox(message, MessageType.None);
         }
 
         serializedObject.ApplyModifiedProperties();
