@@ -50,33 +50,20 @@ void CircularHorizMRT(float2 uv,
                       out float4 target2)  // B channel result
 {
     float coc = CalculateCoC(GetDepthFromPlane(uv));
-    float filterRadius = coc * RCP_WIDTH / KERNEL_RADIUS;
+    float radius = coc * RCP_WIDTH / KERNEL_RADIUS;
 
-    float4 rVal = 0;
-    float4 gVal = 0;
-    float4 bVal = 0;
+    float4 rVal = 0, gVal = 0, bVal = 0;
 
     [unroll(KERNEL_COUNT)]
-    for (int i = 0; i < KERNEL_COUNT; i++)
+    for (int i = -KERNEL_RADIUS; i <= KERNEL_RADIUS; i++)
     {
-        int kernelIdx = i - KERNEL_RADIUS;
-        float2 coords = uv + float2(kernelIdx * filterRadius, 0);
+        float2 coords = uv + float2(i * radius, 0);
+        float3 image = SampleTexture1Bounded(coords).rgb;
 
-        float3 imageTexel = float3(0, 0, 0);
-        if (all(coords >= 0.0) && all(coords <= 1.0))
-        {
-            imageTexel = SampleTexture1(coords).rgb;
-        }
-
-        float4 kernels = CombinedKernels[i];
-        rVal.xy += imageTexel.r * kernels.xy;  // Kernel0
-        rVal.zw += imageTexel.r * kernels.zw;  // Kernel1
-
-        gVal.xy += imageTexel.g * kernels.xy;  // Kernel0
-        gVal.zw += imageTexel.g * kernels.zw;  // Kernel1
-
-        bVal.xy += imageTexel.b * kernels.xy;  // Kernel0
-        bVal.zw += imageTexel.b * kernels.zw;  // Kernel1
+        float4 kernels = CombinedKernels[i + KERNEL_RADIUS];
+        rVal += image.r * kernels;
+        gVal += image.g * kernels;
+        bVal += image.b * kernels;
     }
 
     target0 = rVal;
@@ -88,47 +75,41 @@ void CircularHorizMRT(float2 uv,
 float3 CircularVerticalComposite(float2 uv)
 {
     float coc = CalculateCoC(GetDepthFromPlane(uv));
-    float filterRadius = coc * RCP_HEIGHT / KERNEL_RADIUS;
-
-    // Accumulate complex values for each channel
-    float4 rAccum = 0;
-    float4 gAccum = 0;
-    float4 bAccum = 0;
+    float radius = coc * RCP_HEIGHT / KERNEL_RADIUS;
+    float4 rAcc = 0, gAcc = 0, bAcc = 0;
 
     [unroll(KERNEL_COUNT)]
-    for (int i = 0; i < KERNEL_COUNT; i++)
+    for (int i = -KERNEL_RADIUS; i <= KERNEL_RADIUS; i++)
     {
-        int kernelIdx = i - KERNEL_RADIUS;
-        float2 coords = uv + float2(0, kernelIdx * filterRadius);
+        float2 coords = uv + float2(0, i * radius);
+        if (any(coords < 0.0) || any(coords > 1.0)) continue;
 
-        if (all(coords >= 0.0) && all(coords <= 1.0))
-        {
-            // Sample from all three horizontal pass results
-            float4 rVal = SampleTexture2(coords);
-            float4 gVal = SampleTexture3(coords);
-            float4 bVal = SampleTexture4(coords);
+        float4 rVal = SampleTexture2(coords);
+        float4 gVal = SampleTexture3(coords);
+        float4 bVal = SampleTexture4(coords);
 
-            float4 kernels = CombinedKernels[i];
+        float4 kernels = CombinedKernels[i + KERNEL_RADIUS];
 
-            // Complex multiplication for each channel
-            rAccum.xy += MulComplex(rVal.xy, kernels.xy);  // Kernel0
-            rAccum.zw += MulComplex(rVal.zw, kernels.zw);  // Kernel1
+        rAcc.xy += MulComplex(rVal.xy, kernels.xy);
+        rAcc.zw += MulComplex(rVal.zw, kernels.zw);
 
-            gAccum.xy += MulComplex(gVal.xy, kernels.xy);  // Kernel0
-            gAccum.zw += MulComplex(gVal.zw, kernels.zw);  // Kernel1
+        gAcc.xy += MulComplex(gVal.xy, kernels.xy);
+        gAcc.zw += MulComplex(gVal.zw, kernels.zw);
 
-            bAccum.xy += MulComplex(bVal.xy, kernels.xy);  // Kernel0
-            bAccum.zw += MulComplex(bVal.zw, kernels.zw);  // Kernel1
-        }
+        bAcc.xy += MulComplex(bVal.xy, kernels.xy);
+        bAcc.zw += MulComplex(bVal.zw, kernels.zw);
     }
 
-    // Final result using weighted combination of Kernel0 and Kernel1
-    float3 blurResult;
-    blurResult.r = dot(rAccum.xy, FinalWeights_Kernel0) + dot(rAccum.zw, FinalWeights_Kernel1);
-    blurResult.g = dot(gAccum.xy, FinalWeights_Kernel0) + dot(gAccum.zw, FinalWeights_Kernel1);
-    blurResult.b = dot(bAccum.xy, FinalWeights_Kernel0) + dot(bAccum.zw, FinalWeights_Kernel1);
+    float r0 = dot(rAcc.xy, FinalWeights_Kernel0);
+    float r1 = dot(rAcc.zw, FinalWeights_Kernel1);
 
-    return blurResult;
+    float g0 = dot(gAcc.xy, FinalWeights_Kernel0);
+    float g1 = dot(gAcc.zw, FinalWeights_Kernel1);
+
+    float b0 = dot(bAcc.xy, FinalWeights_Kernel0);
+    float b1 = dot(bAcc.zw, FinalWeights_Kernel1);
+
+    return float3(r0 + r1, g0 + g1, b0 + b1);
 }
 
 #endif // MINIBOKEH_CIRCULARSEPARABLE_INCLUDED
