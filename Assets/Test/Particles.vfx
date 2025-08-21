@@ -71,9 +71,9 @@ MonoBehaviour:
   uiBounds:
     serializedVersion: 2
     x: 313
-    y: 360
+    y: 342
     width: 424
-    height: 1945
+    height: 1947
 --- !u!114 &114350483966674978
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -90,7 +90,7 @@ MonoBehaviour:
   m_Parent: {fileID: 114350483966674976}
   m_Children:
   - {fileID: 114350483966675002}
-  m_UIPosition: {x: 313, y: 360}
+  m_UIPosition: {x: 313, y: 342}
   m_UICollapsed: 0
   m_UISuperCollapsed: 0
   m_InputSlots: []
@@ -177,7 +177,7 @@ MonoBehaviour:
       m_Type:
         m_SerializableType: System.Single, mscorlib, Version=4.0.0.0, Culture=neutral,
           PublicKeyToken=b77a5c561934e089
-      m_SerializableObject: 3
+      m_SerializableObject: 30
     m_Space: -1
   m_Property:
     name: Rate
@@ -587,7 +587,7 @@ MonoBehaviour:
   - {fileID: 114350483966675047}
   - {fileID: 114350483966675049}
   dataType: 0
-  capacity: 256
+  capacity: 1024
   stripCapacity: 1
   particlePerStripCount: 128
   needsComputeBounds: 0

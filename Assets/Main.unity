@@ -418,7 +418,7 @@ Light:
   serializedVersion: 11
   m_Type: 0
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 70
+  m_Intensity: 50
   m_Range: 10
   m_SpotAngle: 40
   m_InnerSpotAngle: 0
@@ -539,7 +539,7 @@ Light:
   serializedVersion: 11
   m_Type: 0
   m_Color: {r: 0.8867924, g: 0, b: 0.23567094, a: 1}
-  m_Intensity: 30
+  m_Intensity: 20
   m_Range: 10
   m_SpotAngle: 40
   m_InnerSpotAngle: 0
@@ -737,8 +737,8 @@ MonoBehaviour:
   <ReferencePlane>k__BackingField: {fileID: 517540853}
   <AutoFocus>k__BackingField: 1
   <FocusDistance>k__BackingField: 15
-  <BokehIntensity>k__BackingField: 2
-  <MaxBlurRadius>k__BackingField: 5
+  <BokehIntensity>k__BackingField: 1.41
+  <MaxBlurRadius>k__BackingField: 4.66
   <DownsampleMode>k__BackingField: 1
   <BokehMode>k__BackingField: 1
 --- !u!1 &1602446955
