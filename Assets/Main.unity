@@ -740,6 +740,7 @@ MonoBehaviour:
   <BokehIntensity>k__BackingField: 2
   <MaxBlurRadius>k__BackingField: 5
   <DownsampleMode>k__BackingField: 1
+  <BokehMode>k__BackingField: 1
 --- !u!1 &1602446955
 GameObject:
   m_ObjectHideFlags: 0
