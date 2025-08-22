@@ -10,15 +10,13 @@ a single reference plane. It assumes content lies on or near that plane, which
 makes it a good fit for planar scenes such as tabletop games, card games, or
 top-down strategy titles, and less suitable for general 3D scenes.
 
-![Reference Plane](temp.png)
+<sub><em>MiniBokeh uses a user-defined reference plane to compute depth. Place
+content near that plane for best results.</sub></em>
+![Reference Plane](https://github.com/user-attachments/assets/6057a191-58ee-40b6-8281-6ad829cc2458)
 
-*MiniBokeh uses a user-defined reference plane to compute depth. Place
-content near that plane for best results.*
-
+<sub><em>MiniBokeh works well for top-down strategy scenes, especially when
+aiming for a miniature look (tilt-shift effect).</sub></em>
 ![Fantasy Kingdom](https://github.com/user-attachments/assets/6f23ee91-4177-44c3-b82d-5c88ad69d109)
-
-*MiniBokeh works well for top-down strategy scenes, especially when aiming for
-a miniature look (tilt-shift effect).*
 
 It uses efficient separable blurs and provides two variants:
 
