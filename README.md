@@ -45,7 +45,7 @@ project, please follow [these instructions].
 ## Setup
 
 - Add `MiniBokehFeature` to the Renderer Features list in your URP Renderer
-  asset. See the Unity documentation [3] for step-by-step instructions.
+  asset. See the [Unity documentation][3] for step-by-step instructions.
 - Attach the `MiniBokehController` component to each camera that should use the
   effect. The effect runs only on cameras with this component.
 
