@@ -2,7 +2,7 @@
 
 ![gif](https://github.com/user-attachments/assets/d0ecbc56-c9bf-4c61-85a4-23d6aa05770c)
 
-MiniBokeh is a lightweight depth-of-field effect for Unity’s Universal
+MiniBokeh is a lightweight depth-of-field effect for Unity's Universal
 Render Pipeline (URP).
 
 Instead of sampling a camera depth texture, MiniBokeh models scene depth with
@@ -25,6 +25,9 @@ It uses efficient separable blurs and provides two variants:
 
 [1]: https://dl.acm.org/doi/10.1111/j.1467-8659.2012.02097.x
 [2]: https://dl.acm.org/doi/10.1145/3084363.3085022
+
+By using separable filters, MiniBokeh reduces GPU load compared to typical
+depth-of-field implementations, making it well-suited for mobile use.
 
 ## System Requirements
 
@@ -56,27 +59,55 @@ project, please follow [these instructions].
 ![Inspector](https://github.com/user-attachments/assets/7a002f9c-917f-489d-9751-6fda2fcb2c71)
 
 ### Reference Plane
+
 Transform that defines the reference plane used to compute depth.
 
 ### Auto Focus
+
 When enabled, focus distance is computed by intersecting the camera's forward
 ray with the reference plane. Disable to set it manually.
 
 ### Focus Distance
+
 Manual focus distance, used when Auto Focus is off.
 
 ### Bokeh Strength
+
 Controls bokeh sensitivity. Higher values create stronger blur with smaller
 depth differences. Value represents blur radius (% of screen height) when
 object distance equals focus distance.
 
 ### Max Blur Radius
+
 Maximum blur radius limit, specified as a percentage of screen height.
 
 ### Bokeh Mode
+
 Aperture shape. Hexagonal is faster but may show artifacts; Circular is
 smoother but uses more bandwidth.
 
 ### Downsample Mode
+
 Processing resolution. Half is faster with a slightly softer result; Full
 preserves more detail at higher cost.
+
+## Caveats
+
+### Artifacts with Hexagonal Bokeh
+
+Hexagonal mode can produce artifacts near bright highlights.
+
+![Hex Artifacts](https://github.com/user-attachments/assets/c7d21735-b93c-4945-92d7-6cf16157ae05)
+
+These artifacts are most visible in high-contrast scenes, for example with
+bright floating particles on a dark background.
+
+### Bokeh Shape Distortion
+
+Bokeh shapes can appear distorted (teardrop-like) when the camera views the
+reference plane at a shallow angle.
+
+![Distorted Bokeh](https://github.com/user-attachments/assets/a053705a-1799-4632-b717-ee633f033b2b)
+
+A correct DoF scatters using the source pixel’s CoC; MiniBokeh gathers and
+uses the receiver’s CoC, which leads to distortion.
