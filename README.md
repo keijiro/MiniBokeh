@@ -12,10 +12,12 @@ top-down strategy titles, and less suitable for general 3D scenes.
 
 <sub><em>MiniBokeh uses a user-defined reference plane to compute depth. Place
 content near that plane for best results.</sub></em>
+
 ![Reference Plane](https://github.com/user-attachments/assets/6057a191-58ee-40b6-8281-6ad829cc2458)
 
 <sub><em>MiniBokeh works well for top-down strategy scenes, especially when
 aiming for a miniature look (tilt-shift effect).</sub></em>
+
 ![Fantasy Kingdom](https://github.com/user-attachments/assets/6f23ee91-4177-44c3-b82d-5c88ad69d109)
 
 It uses efficient separable blurs and provides two variants:
@@ -34,7 +36,6 @@ depth-of-field implementations, making it well-suited for mobile use.
 - Unity 6
 - Universal Render Pipeline
 
-<!--
 ## Installation
 
 The MiniBokeh package (`jp.keijiro.minibokeh`) can be installed via the
@@ -43,7 +44,6 @@ project, please follow [these instructions].
 
 [these instructions]:
   https://gist.github.com/keijiro/f8c7e8ff29bfe63d86b888901b82644c
--->
 
 ## Setup
 
