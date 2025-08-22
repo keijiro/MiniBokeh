@@ -6,7 +6,7 @@
   "author": "Keijiro Takahashi",
   "license": "SEE LICENSE IN LICENSE",
   "dependencies": { },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "unity": "6000.0",
   "keywords": [ "unity" ]
 }
