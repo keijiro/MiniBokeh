@@ -41,3 +41,28 @@ project, please follow [these instructions].
 [these instructions]:
   https://gist.github.com/keijiro/f8c7e8ff29bfe63d86b888901b82644c
 -->
+
+## Setup
+
+- Add `MiniBokehFeature` to the Renderer Features list in your URP Renderer
+  asset. See the Unity documentation [3] for step-by-step instructions.
+- Attach the `MiniBokehController` component to each camera that should use the
+  effect. The effect runs only on cameras with this component.
+
+[3]: https://docs.unity3d.com/6000.0/Documentation/Manual/urp/urp-renderer-feature.html
+
+## Controller Component
+
+- **Reference Plane**: Transform that defines the reference plane used to compute
+  depth.
+- **Auto Focus**: When enabled, focus distance is computed by intersecting the
+  camera’s forward ray with the reference plane. Disable to set it manually.
+- **Focus Distance**: Manual focus distance, used when Auto Focus is off.
+- **Bokeh Intensity**: Controls depth-of-field strength. Higher values increase
+  blur and narrow the in-focus range.
+- **Max Blur Radius**: Maximum circle of confusion radius when fully blurred.
+  Specified as a percentage of screen height.
+- **Bokeh Mode**: Aperture shape. Hexagonal is faster but may show artifacts;
+  Circular is smoother but uses more bandwidth.
+- **Downsample Mode**: Processing resolution. Half is faster with a slightly
+  softer result; Full preserves more detail at higher cost.
