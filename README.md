@@ -53,16 +53,30 @@ project, please follow [these instructions].
 
 ## Controller Component
 
-- **Reference Plane**: Transform that defines the reference plane used to compute
-  depth.
-- **Auto Focus**: When enabled, focus distance is computed by intersecting the
-  camera’s forward ray with the reference plane. Disable to set it manually.
-- **Focus Distance**: Manual focus distance, used when Auto Focus is off.
-- **Bokeh Intensity**: Controls depth-of-field strength. Higher values increase
-  blur and narrow the in-focus range.
-- **Max Blur Radius**: Maximum circle of confusion radius when fully blurred.
-  Specified as a percentage of screen height.
-- **Bokeh Mode**: Aperture shape. Hexagonal is faster but may show artifacts;
-  Circular is smoother but uses more bandwidth.
-- **Downsample Mode**: Processing resolution. Half is faster with a slightly
-  softer result; Full preserves more detail at higher cost.
+![Inspector](https://github.com/user-attachments/assets/7a002f9c-917f-489d-9751-6fda2fcb2c71)
+
+### Reference Plane
+Transform that defines the reference plane used to compute depth.
+
+### Auto Focus
+When enabled, focus distance is computed by intersecting the camera's forward
+ray with the reference plane. Disable to set it manually.
+
+### Focus Distance
+Manual focus distance, used when Auto Focus is off.
+
+### Bokeh Strength
+Controls bokeh sensitivity. Higher values create stronger blur with smaller
+depth differences. Value represents blur radius (% of screen height) when
+object distance equals focus distance.
+
+### Max Blur Radius
+Maximum blur radius limit, specified as a percentage of screen height.
+
+### Bokeh Mode
+Aperture shape. Hexagonal is faster but may show artifacts; Circular is
+smoother but uses more bandwidth.
+
+### Downsample Mode
+Processing resolution. Half is faster with a slightly softer result; Full
+preserves more detail at higher cost.
