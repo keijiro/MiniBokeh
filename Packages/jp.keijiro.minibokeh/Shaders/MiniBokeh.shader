@@ -1,5 +1,12 @@
 Shader "Hidden/MiniBokeh"
 {
+    Properties
+    {
+        _FocusDistance("Focus Distance", Float) = 10
+        _BokehStrength("Bokeh Strength", Float) = 1
+        _MaxBlurRadius("Max Blur Radius", Float) = 4
+    }
+
 HLSLINCLUDE
 
 #include "Common.hlsl"

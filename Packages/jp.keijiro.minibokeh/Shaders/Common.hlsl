@@ -14,7 +14,7 @@ TEXTURE2D(_Texture4);
 // DoF parameters
 float4 _PlaneEquation;
 float _FocusDistance;
-float _BokehIntensity;
+float _BokehStrength;
 float _MaxBlurRadius;
 
 // Texture sampling functions
@@ -69,10 +69,10 @@ float GetDepthFromPlane(float2 screenPos)
 
 float CalculateCoC(float depth)
 {
-    float coc = abs(depth - _FocusDistance) / _FocusDistance;
-    coc = saturate(coc * _BokehIntensity);
-    float maxBlurRadiusPixels = _MaxBlurRadius * 0.01 * _ScaledScreenParams.y;
-    return coc * maxBlurRadiusPixels;
+    float normalizedDepthDiff = abs(depth - _FocusDistance) / _FocusDistance;
+    float cocPixels = normalizedDepthDiff * _BokehStrength * 0.01 * _ScaledScreenParams.y;
+    float maxBlurPixels = _MaxBlurRadius * 0.01 * _ScaledScreenParams.y;
+    return min(cocPixels, maxBlurPixels);
 }
 
 // Screen space helpers

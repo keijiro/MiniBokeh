@@ -19,11 +19,11 @@ public sealed partial class MiniBokehController : MonoBehaviour
     [field: SerializeField]
     public float FocusDistance { get; set; } = 10f;
 
-    [field: SerializeField, Range(0f, 5f)]
-    public float BokehIntensity { get; set; } = 1f;
+    [field: SerializeField, Range(0f, 10f)]
+    public float BokehStrength { get; set; } = 2f;
 
-    [field: SerializeField, Range(0.1f, 10f)]
-    public float MaxBlurRadius { get; set; } = 3f;
+    [field: SerializeField, Range(0.1f, 5f)]
+    public float MaxBlurRadius { get; set; } = 2f;
 
     [field: SerializeField]
     public ResolutionMode DownsampleMode { get; set; } = ResolutionMode.Half;
@@ -75,7 +75,7 @@ public sealed partial class MiniBokehController : MonoBehaviour
 
         MaterialProperties.SetVector("_PlaneEquation", GetReferencePlaneEquation());
         MaterialProperties.SetFloat("_FocusDistance", GetEffectiveFocusDistance());
-        MaterialProperties.SetFloat("_BokehIntensity", BokehIntensity);
+        MaterialProperties.SetFloat("_BokehStrength", BokehStrength);
         MaterialProperties.SetFloat("_MaxBlurRadius", MaxBlurRadius);
     }
 

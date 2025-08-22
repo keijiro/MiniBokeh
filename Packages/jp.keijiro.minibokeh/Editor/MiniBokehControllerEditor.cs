@@ -9,7 +9,7 @@ class MiniBokehControllerEditor : Editor
     SerializedProperty _referencePlane;
     SerializedProperty _autoFocus;
     SerializedProperty _focusDistance;
-    SerializedProperty _bokehIntensity;
+    SerializedProperty _bokehStrength;
     SerializedProperty _maxBlurRadius;
     SerializedProperty _downsampleMode;
     SerializedProperty _bokehMode;
@@ -19,7 +19,7 @@ class MiniBokehControllerEditor : Editor
         _referencePlane = serializedObject.FindProperty("<ReferencePlane>k__BackingField");
         _autoFocus = serializedObject.FindProperty("<AutoFocus>k__BackingField");
         _focusDistance = serializedObject.FindProperty("<FocusDistance>k__BackingField");
-        _bokehIntensity = serializedObject.FindProperty("<BokehIntensity>k__BackingField");
+        _bokehStrength = serializedObject.FindProperty("<BokehStrength>k__BackingField");
         _maxBlurRadius = serializedObject.FindProperty("<MaxBlurRadius>k__BackingField");
         _downsampleMode = serializedObject.FindProperty("<DownsampleMode>k__BackingField");
         _bokehMode = serializedObject.FindProperty("<BokehMode>k__BackingField");
@@ -35,23 +35,12 @@ class MiniBokehControllerEditor : Editor
         if (!_autoFocus.boolValue)
             EditorGUILayout.PropertyField(_focusDistance);
 
-        EditorGUILayout.PropertyField(_bokehIntensity);
+        EditorGUILayout.PropertyField(_bokehStrength);
         EditorGUILayout.PropertyField(_maxBlurRadius);
 
         EditorGUILayout.PropertyField(_bokehMode);
         EditorGUILayout.PropertyField(_downsampleMode);
 
-        if (_bokehIntensity.floatValue > 0)
-        {
-            var effectiveFocusDistance = GetEffectiveFocusDistance();
-            var maxCoCDistance = effectiveFocusDistance / _bokehIntensity.floatValue;
-            var nearDistance = effectiveFocusDistance - maxCoCDistance;
-            var farDistance = effectiveFocusDistance + maxCoCDistance;
-
-            var message = $"Dynamic CoC range: {nearDistance:F1} - {farDistance:F1}\nBeyond this range: maximum blur radius";
-
-            EditorGUILayout.HelpBox(message, MessageType.None);
-        }
 
         serializedObject.ApplyModifiedProperties();
     }

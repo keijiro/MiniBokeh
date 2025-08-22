@@ -737,8 +737,8 @@ MonoBehaviour:
   <ReferencePlane>k__BackingField: {fileID: 517540853}
   <AutoFocus>k__BackingField: 1
   <FocusDistance>k__BackingField: 15
-  <BokehIntensity>k__BackingField: 1.41
-  <MaxBlurRadius>k__BackingField: 4.66
+  <BokehStrength>k__BackingField: 5
+  <MaxBlurRadius>k__BackingField: 3
   <DownsampleMode>k__BackingField: 1
   <BokehMode>k__BackingField: 1
 --- !u!1 &1602446955
