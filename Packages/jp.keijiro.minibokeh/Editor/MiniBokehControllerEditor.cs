@@ -41,35 +41,7 @@ class MiniBokehControllerEditor : Editor
         EditorGUILayout.PropertyField(_bokehMode);
         EditorGUILayout.PropertyField(_downsampleMode);
 
-
         serializedObject.ApplyModifiedProperties();
-    }
-
-    float GetEffectiveFocusDistance()
-    {
-        var controller = (MiniBokehController)target;
-
-        if (!_autoFocus.boolValue)
-            return _focusDistance.floatValue;
-
-        if (controller.ReferencePlane != null)
-        {
-            var camera = controller.GetComponent<Camera>();
-            if (camera != null)
-            {
-                var cameraTransform = camera.transform;
-                var planeNormal = controller.ReferencePlane.up;
-                var planePoint = controller.ReferencePlane.position;
-
-                var ray = new Ray(cameraTransform.position, cameraTransform.forward);
-                var plane = new Plane(planeNormal, planePoint);
-
-                if (plane.Raycast(ray, out var distance))
-                    return distance;
-            }
-        }
-
-        return _focusDistance.floatValue;
     }
 }
 
