@@ -1,12 +1,13 @@
 {
   "name": "jp.keijiro.minibokeh",
   "displayName": "MiniBokeh",
-  "dependencies": { "com.unity.render-pipelines.universal": "17.0.0" },
-  "description": "Lightweight field of view effect (bokeh).",
+  "description": "Lightweight depth of field effect (bokeh).",
   "author": "Keijiro Takahashi",
   "license": "SEE LICENSE IN LICENSE",
-  "dependencies": { },
   "version": "1.0.1",
   "unity": "6000.0",
-  "keywords": [ "unity" ]
+  "keywords": ["unity"],
+  "dependencies": {
+    "com.unity.render-pipelines.universal": "17.0.0"
+  }
 }

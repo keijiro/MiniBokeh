@@ -34,7 +34,10 @@ depth-of-field implementations, making it well-suited for mobile use.
 ## System Requirements
 
 - Unity 6
-- Universal Render Pipeline
+- Universal Render Pipeline (URP)
+- Render Graph enabled: MiniBokeh requires the URP Render Graph backend and is not
+  compatible with "Compatibility Mode (Render Graph Disabled)" in the
+  URP Global Settings.
 
 ## Installation
 
