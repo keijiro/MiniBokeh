@@ -134,3 +134,18 @@ property.
 ![Boundary Fade applied](https://github.com/user-attachments/assets/ec02a6a3-0a80-45db-9d6b-85549b5774fa)
 
 However, this also darkens screen edges, so balance it to suit the scene's tone.
+
+## Gallery
+
+![Screenshot 1](https://github.com/user-attachments/assets/bb44b524-b8f5-45b6-8cd3-52fa5e55eabb)
+![Screenshot 2](https://github.com/user-attachments/assets/61d36365-0d96-4313-8be2-cb7d57e00d09)
+![Screenshot 3](https://github.com/user-attachments/assets/3261a8ff-7cbc-4c83-a4c5-c88a15dafd4b)
+![Screenshot 4](https://github.com/user-attachments/assets/a4579dff-6ceb-43b4-b219-b409b412907f)
+
+- [Highway lnterchange, Overpass][Gallery 2] by Metazeon (CC-BY)
+- [City][Gallery 3] by Invictus.Art.00 (CC-BY)
+- [Medieval City - Minecraft][Gallery 4] by cubical.xyz (CC-BY)
+
+[Gallery 2]: https://sketchfab.com/3d-models/highway-lnterchange-overpass-17930890a2934b4099cce768c973e579
+[Gallery 3]: https://sketchfab.com/3d-models/city-deb4dc75e62346c19c117bf61334eeb5
+[Gallery 4]: https://sketchfab.com/3d-models/medieval-city-minecraft-44fd730f152446428a51e10f36fdf1c4
