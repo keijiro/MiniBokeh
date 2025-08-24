@@ -84,6 +84,11 @@ object distance equals focus distance.
 
 Maximum blur radius limit, specified as a percentage of screen height.
 
+### Boundary Fade
+
+Controls edge darkening for out-of-bounds samples. See Limitations:
+[Edge Sample Artifacts](#edge-sample-artifacts) for details.
+
 ### Bokeh Mode
 
 Aperture shape. Hexagonal is faster but may show artifacts; Circular is
@@ -94,7 +99,7 @@ smoother but uses more bandwidth.
 Processing resolution. Half is faster with a slightly softer result; Full
 preserves more detail at higher cost.
 
-## Caveats
+## Limitations
 
 ### Artifacts with Hexagonal Bokeh
 
@@ -114,3 +119,18 @@ reference plane at a shallow angle.
 
 A correct DoF scatters using the source pixel’s CoC; MiniBokeh gathers and
 uses the receiver’s CoC, which leads to distortion.
+
+### Edge Sample Artifacts
+
+MiniBokeh uses clamp texture sampling for out-of-bounds samples. This can cause
+noticeable temporal artifacts at boundaries, especially with high-frequency
+elements (e.g., small dots, thin lines).
+
+![Edge artifacts example]()
+
+You can reduce these by darkening out-of-bounds samples using the Boundary Fade
+property.
+
+![Boundary Fade applied]()
+
+However, this also darkens screen edges, so balance it to suit the scene's tone.

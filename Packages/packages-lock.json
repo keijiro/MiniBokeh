@@ -159,7 +159,9 @@
       "version": "file:jp.keijiro.minibokeh",
       "depth": 0,
       "source": "embedded",
-      "dependencies": {}
+      "dependencies": {
+        "com.unity.render-pipelines.universal": "17.0.0"
+      }
     },
     "jp.keijiro.noiseshader": {
       "version": "2.0.0",
