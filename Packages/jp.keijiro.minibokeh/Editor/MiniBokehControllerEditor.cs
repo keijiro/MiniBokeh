@@ -11,6 +11,7 @@ class MiniBokehControllerEditor : Editor
     SerializedProperty _focusDistance;
     SerializedProperty _bokehStrength;
     SerializedProperty _maxBlurRadius;
+    SerializedProperty _boundaryFade;
     SerializedProperty _downsampleMode;
     SerializedProperty _bokehMode;
 
@@ -21,6 +22,7 @@ class MiniBokehControllerEditor : Editor
         _focusDistance = serializedObject.FindProperty("<FocusDistance>k__BackingField");
         _bokehStrength = serializedObject.FindProperty("<BokehStrength>k__BackingField");
         _maxBlurRadius = serializedObject.FindProperty("<MaxBlurRadius>k__BackingField");
+        _boundaryFade = serializedObject.FindProperty("<BoundaryFade>k__BackingField");
         _downsampleMode = serializedObject.FindProperty("<DownsampleMode>k__BackingField");
         _bokehMode = serializedObject.FindProperty("<BokehMode>k__BackingField");
     }
@@ -37,6 +39,7 @@ class MiniBokehControllerEditor : Editor
 
         EditorGUILayout.PropertyField(_bokehStrength);
         EditorGUILayout.PropertyField(_maxBlurRadius);
+        EditorGUILayout.PropertyField(_boundaryFade);
 
         EditorGUILayout.PropertyField(_bokehMode);
         EditorGUILayout.PropertyField(_downsampleMode);

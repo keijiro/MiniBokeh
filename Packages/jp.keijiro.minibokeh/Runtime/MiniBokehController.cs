@@ -25,6 +25,9 @@ public sealed partial class MiniBokehController : MonoBehaviour
     [field: SerializeField, Range(0.1f, 5f)]
     public float MaxBlurRadius { get; set; } = 2f;
 
+    [field: SerializeField, Range(0f, 1f)]
+    public float BoundaryFade { get; set; } = 0.3f;
+
     [field: SerializeField]
     public ResolutionMode DownsampleMode { get; set; } = ResolutionMode.Half;
 
@@ -77,6 +80,7 @@ public sealed partial class MiniBokehController : MonoBehaviour
         MaterialProperties.SetFloat("_FocusDistance", GetEffectiveFocusDistance());
         MaterialProperties.SetFloat("_BokehStrength", BokehStrength);
         MaterialProperties.SetFloat("_MaxBlurRadius", MaxBlurRadius);
+        MaterialProperties.SetFloat("_BoundaryFade", BoundaryFade * BoundaryFade * 1000f);
     }
 
     #endregion

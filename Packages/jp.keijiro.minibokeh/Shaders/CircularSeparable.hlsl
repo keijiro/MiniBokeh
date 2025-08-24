@@ -82,11 +82,10 @@ float3 CircularVerticalComposite(float2 uv)
     for (int i = -KERNEL_RADIUS; i <= KERNEL_RADIUS; i++)
     {
         float2 coords = uv + float2(0, i * radius);
-        if (any(coords < 0.0) || any(coords > 1.0)) continue;
 
-        float4 rVal = SampleTexture2(coords);
-        float4 gVal = SampleTexture3(coords);
-        float4 bVal = SampleTexture4(coords);
+        float4 rVal = SampleTexture2Bounded(coords);
+        float4 gVal = SampleTexture3Bounded(coords);
+        float4 bVal = SampleTexture4Bounded(coords);
 
         float4 kernels = CombinedKernels[i + KERNEL_RADIUS];
 

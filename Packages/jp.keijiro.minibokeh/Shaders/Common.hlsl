@@ -16,6 +16,14 @@ float4 _PlaneEquation;
 float _FocusDistance;
 float _BokehStrength;
 float _MaxBlurRadius;
+float _BoundaryFade;
+
+// Boundary fade for out-of-range UV
+float CalculateBoundaryFade(float2 uv)
+{
+    float2 dist = max(0.0, max(-uv, uv - 1.0));
+    return exp(-max(dist.x, dist.y) * _BoundaryFade);
+}
 
 // Texture sampling functions
 float4 SampleTexture1(float2 uv)
@@ -40,14 +48,22 @@ float4 SampleTexture4(float2 uv)
 
 float4 SampleTexture1Bounded(float2 uv)
 {
-    bool inBounds = all(uv >= 0.0) && all(uv <= 1.0);
-    return inBounds ? SampleTexture1(uv) : 0;
+    return SampleTexture1(saturate(uv)) * CalculateBoundaryFade(uv);
 }
 
 float4 SampleTexture2Bounded(float2 uv)
 {
-    bool inBounds = all(uv >= 0.0) && all(uv <= 1.0);
-    return inBounds ? SampleTexture2(uv) : 0;
+    return SampleTexture2(saturate(uv)) * CalculateBoundaryFade(uv);
+}
+
+float4 SampleTexture3Bounded(float2 uv)
+{
+    return SampleTexture3(saturate(uv)) * CalculateBoundaryFade(uv);
+}
+
+float4 SampleTexture4Bounded(float2 uv)
+{
+    return SampleTexture4(saturate(uv)) * CalculateBoundaryFade(uv);
 }
 
 // Circle of Confusion calculation
