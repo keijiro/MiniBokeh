@@ -126,11 +126,11 @@ MiniBokeh uses clamp texture sampling for out-of-bounds samples. This can cause
 noticeable temporal artifacts at boundaries, especially with high-frequency
 elements (e.g., small dots, thin lines).
 
-![Edge artifacts example]()
+![Edge artifacts example](https://github.com/user-attachments/assets/d8775f4b-7332-41da-898b-e8bb13eb9e61)
 
 You can reduce these by darkening out-of-bounds samples using the Boundary Fade
 property.
 
-![Boundary Fade applied]()
+![Boundary Fade applied](https://github.com/user-attachments/assets/ec02a6a3-0a80-45db-9d6b-85549b5774fa)
 
 However, this also darkens screen edges, so balance it to suit the scene's tone.
