@@ -26,7 +26,12 @@ void Vert(uint vertexID : SV_VertexID,
 float4 FragDownsample(float4 position : SV_Position,
                       float2 texCoord : TEXCOORD0) : SV_Target
 {
-    return SampleTexture1(texCoord);
+    float2 delta = _Texture1_TexelSize.xy;
+    float4 c1 = SampleTexture1(texCoord + delta * float2(-1, -1));
+    float4 c2 = SampleTexture1(texCoord + delta * float2(+1, -1));
+    float4 c3 = SampleTexture1(texCoord + delta * float2(-1, +1));
+    float4 c4 = SampleTexture1(texCoord + delta * float2(+1, +1));
+    return (c1 + c2 + c3 + c4) * 0.25;
 }
 
 float4 FragUpsampleComposite(float4 position : SV_Position,

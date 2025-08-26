@@ -10,6 +10,10 @@ TEXTURE2D(_Texture1);
 TEXTURE2D(_Texture2);
 TEXTURE2D(_Texture3);
 TEXTURE2D(_Texture4);
+float4 _Texture1_TexelSize;
+float4 _Texture2_TexelSize;
+float4 _Texture3_TexelSize;
+float4 _Texture4_TexelSize;
 
 // DoF parameters
 float4 _PlaneEquation;
