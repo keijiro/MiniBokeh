@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "com.unity.recorder": "5.1.2",
     "com.unity.render-pipelines.universal": "17.0.4",
     "jp.keijiro.klak.motion": "1.1.0",
     "jp.keijiro.klutter-tools": "2.3.0",
