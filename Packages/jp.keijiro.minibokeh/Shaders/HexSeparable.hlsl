@@ -26,7 +26,7 @@ float3 HexagonalBokehHorizontal(float2 uv)
 
         float offset = i * step;
         float2 sampleUV = uv + float2(offset * RCP_WIDTH, 0);
-        color += SampleTexture1Bounded(sampleUV);
+        color += SampleTexture1Bounded(sampleUV).rgb;
     }
 
     int totalSamples = sampleCount * 2 + 1;
@@ -57,8 +57,8 @@ float3 HexagonalBokehDiagonal(float2 uv)
         float2 sampleUV1 = uv + dir1 * offset * RCP_WIDTH_HEIGHT;
         float2 sampleUV2 = uv + dir2 * offset * RCP_WIDTH_HEIGHT;
 
-        color1 += SampleTexture1Bounded(sampleUV1);
-        color2 += SampleTexture1Bounded(sampleUV2);
+        color1 += SampleTexture1Bounded(sampleUV1).rgb;
+        color2 += SampleTexture1Bounded(sampleUV2).rgb;
     }
 
     int totalSamples = sampleCount * 2 + 1;
