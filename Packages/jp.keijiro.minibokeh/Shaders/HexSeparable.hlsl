@@ -10,23 +10,29 @@
 
 float3 HexagonalBokehHorizontal(float2 uv)
 {
+    // Center sample
+    float3 color = SampleTexture1(uv).rgb;
     float coc = CalculateCoC(GetDepthFromPlane(uv));
-    if (coc < 0.5) return SampleTexture1(uv).rgb;
 
-    float3 color = 0;
+    // Early return
+    if (coc < 0.5) return color;
 
+    // Sample count and step width
     const int maxSamples = 8;
     int sampleCount = clamp((int)(coc * 2), 1, maxSamples);
     float step = coc / sampleCount;
 
-    [unroll(17)]
-    for (int i = -maxSamples; i <= maxSamples; i++)
+    [unroll(8)]
+    for (int i = 1; i <= maxSamples; i++)
     {
-        if (abs(i) > sampleCount) continue;
+        if (i > sampleCount) continue;
 
         float offset = i * step;
-        float2 sampleUV = uv + float2(offset * RCP_WIDTH, 0);
-        color += SampleTexture1Bounded(sampleUV).rgb;
+        float2 sampleUV1 = uv + float2( offset * RCP_WIDTH, 0);
+        float2 sampleUV2 = uv + float2(-offset * RCP_WIDTH, 0);
+
+        color += SampleTexture1Bounded(sampleUV1).rgb;
+        color += SampleTexture1Bounded(sampleUV2).rgb;
     }
 
     int totalSamples = sampleCount * 2 + 1;
@@ -35,30 +41,38 @@ float3 HexagonalBokehHorizontal(float2 uv)
 
 float3 HexagonalBokehDiagonal(float2 uv)
 {
+    // Center sample
+    float3 centerColor = SampleTexture1(uv).rgb;
     float coc = CalculateCoC(GetDepthFromPlane(uv));
-    if (coc < 0.5) return SampleTexture1(uv).rgb;
 
-    float3 color1 = 0, color2 = 0;
+    // Early return
+    if (coc < 0.5) return centerColor;
 
+    // Sample count and step width
     const int maxSamples = 8;
     int sampleCount = clamp((int)(coc * 2), 1, maxSamples);
     float step = coc / sampleCount;
 
     float2 dir1 = float2(0.5,  0.866025);    // +60 degrees
     float2 dir2 = float2(0.5, -0.866025);    // -60 degrees
+    float3 color1 = centerColor;
+    float3 color2 = centerColor;
 
-    [unroll(17)]
-    for (int i = -maxSamples; i <= maxSamples; i++)
+    [unroll(8)]
+    for (int i = 1; i <= maxSamples; i++)
     {
-        if (abs(i) > sampleCount) continue;
+        if (i > sampleCount) continue;
 
         float offset = i * step;
-
         float2 sampleUV1 = uv + dir1 * offset * RCP_WIDTH_HEIGHT;
-        float2 sampleUV2 = uv + dir2 * offset * RCP_WIDTH_HEIGHT;
+        float2 sampleUV2 = uv - dir1 * offset * RCP_WIDTH_HEIGHT;
+        float2 sampleUV3 = uv + dir2 * offset * RCP_WIDTH_HEIGHT;
+        float2 sampleUV4 = uv - dir2 * offset * RCP_WIDTH_HEIGHT;
 
         color1 += SampleTexture1Bounded(sampleUV1).rgb;
-        color2 += SampleTexture1Bounded(sampleUV2).rgb;
+        color1 += SampleTexture1Bounded(sampleUV2).rgb;
+        color2 += SampleTexture1Bounded(sampleUV3).rgb;
+        color2 += SampleTexture1Bounded(sampleUV4).rgb;
     }
 
     int totalSamples = sampleCount * 2 + 1;
