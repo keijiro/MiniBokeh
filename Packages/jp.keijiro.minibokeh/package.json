@@ -1,6 +1,6 @@
 {
   "name": "jp.keijiro.minibokeh",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "displayName": "MiniBokeh",
   "description": "Lightweight depth of field effect (bokeh).",
   "unity": "6000.0",
@@ -13,6 +13,6 @@
   "licensesUrl": "https://github.com/keijiro/MiniBokeh/blob/main/LICENSE",
   "license": "SEE LICENSE IN LICENSE",
   "_upm": {
-    "changelog": ""
+    "changelog": "<b>Added</b><br>- Added signing for Unity 6.3."
   }
 }
